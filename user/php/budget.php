@@ -266,6 +266,7 @@ $total_remaining = $total_budget_amount - $total_spent;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Budžeti - Budgetar</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/budget.css">
     <link rel="icon" href="../../assets/image/logo.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">

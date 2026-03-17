@@ -83,15 +83,12 @@ while ($row = mysqli_fetch_assoc($recurring_result)) {
     $original_day = date('j', strtotime($row['date']));
     $days_in_current_month = date('t', strtotime($first_day));
     
-    // If original day exceeds days in current month, use last day of month
     $day_to_use = min($original_day, $days_in_current_month);
     
-    // Add recurring transaction to current month view
     if (!isset($transactions[$day_to_use])) {
         $transactions[$day_to_use] = [];
     }
     
-    // Mark as recurring in the display
     $recurring_transaction = $row;
     $recurring_transaction['is_recurring_display'] = true;
     $transactions[$day_to_use][] = $recurring_transaction;
@@ -113,7 +110,6 @@ foreach ($transactions as $day_transactions) {
 $balance = $total_income - $total_expense;
 
 // Calculate carried balance from ALL months before the current one
-// This includes actual past transactions + recurring transactions projected into past months
 $stmt_carried = mysqli_prepare($savienojums, "SELECT type, SUM(amount) as total FROM BU_transactions WHERE user_id = ? AND date < ? GROUP BY type");
 mysqli_stmt_bind_param($stmt_carried, "is", $user_id, $first_day);
 mysqli_stmt_execute($stmt_carried);
@@ -153,7 +149,43 @@ if ($is_current_month) {
 }
 $today_balance = $carried_balance + $today_income - $today_expense;
 
-// Calander generator
+// ─── Fetch active budgets for budget-exceed warning ───────────────────────────
+// Only load if the is_recurring column exists (migration guard)
+$activeBudgets = [];
+$col_check = mysqli_query($savienojums, "SHOW COLUMNS FROM BU_budgets LIKE 'is_recurring'");
+$budgets_table_ready = ($col_check && mysqli_num_rows($col_check) > 0);
+
+if ($budgets_table_ready) {
+    $bstmt = mysqli_prepare($savienojums,
+        "SELECT id, budget_name, budget_amount, start_date, end_date,
+                warning_threshold, recurring_days
+         FROM   BU_budgets
+         WHERE  user_id = ? AND end_date >= CURDATE()
+         ORDER  BY start_date ASC");
+    mysqli_stmt_bind_param($bstmt, "i", $user_id);
+    mysqli_stmt_execute($bstmt);
+    $bres = mysqli_stmt_get_result($bstmt);
+    while ($brow = mysqli_fetch_assoc($bres)) {
+        // Calculate how much has already been spent against this budget
+        $sstmt = mysqli_prepare($savienojums,
+            "SELECT COALESCE(SUM(amount), 0) AS spent
+             FROM   BU_transactions
+             WHERE  user_id = ? AND type = 'expense'
+               AND  date BETWEEN ? AND ?");
+        mysqli_stmt_bind_param($sstmt, "iss",
+            $user_id, $brow['start_date'], $brow['end_date']);
+        mysqli_stmt_execute($sstmt);
+        $srow  = mysqli_fetch_assoc(mysqli_stmt_get_result($sstmt));
+        mysqli_stmt_close($sstmt);
+
+        $brow['spent']     = floatval($srow['spent']);
+        $brow['remaining'] = $brow['budget_amount'] - $brow['spent'];
+        $activeBudgets[]   = $brow;
+    }
+    mysqli_stmt_close($bstmt);
+}
+
+// Calendar generator
 $first_day_of_month = mktime(0, 0, 0, $current_month, 1, $current_year);
 $days_in_month = date('t', $first_day_of_month);
 $day_of_week = date('N', $first_day_of_month); // 1 (Monday) to 7 (Sunday)
@@ -180,6 +212,8 @@ if ($next_month > 12) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kalendārs - Budgetiva</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/calendar.css">
     <link rel="icon" href="../../assets/image/logo.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
 </head>
@@ -355,40 +389,20 @@ if ($next_month > 12) {
                 
                 <div class="form-group">
                     <label for="income_date" class="form-label">Datums</label>
-                    <input 
-                        type="date" 
-                        id="income_date" 
-                        name="income_date"
-                        class="form-input" 
-                        required
-                        value="<?php echo date('Y-m-d'); ?>"
-                    >
+                    <input type="date" id="income_date" name="income_date"
+                        class="form-input" required value="<?php echo date('Y-m-d'); ?>">
                 </div>
 
                 <div class="form-group">
                     <label for="income_amount" class="form-label">Summa (€)</label>
-                    <input 
-                        type="number" 
-                        id="income_amount" 
-                        name="income_amount"
-                        class="form-input" 
-                        placeholder="0.00"
-                        step="0.01"
-                        min="0.01"
-                        required
-                    >
+                    <input type="number" id="income_amount" name="income_amount"
+                        class="form-input" placeholder="0.00" step="0.01" min="0.01" required>
                 </div>
 
                 <div class="form-group">
                     <label for="income_description" class="form-label">Apraksts</label>
-                    <input 
-                        type="text" 
-                        id="income_description" 
-                        name="income_description"
-                        class="form-input" 
-                        placeholder="Piemēram: Alga, Prēmija..."
-                        required
-                    >
+                    <input type="text" id="income_description" name="income_description"
+                        class="form-input" placeholder="Piemēram: Alga, Prēmija..." required>
                 </div>
 
                 <div class="form-group">
@@ -417,43 +431,24 @@ if ($next_month > 12) {
                 
                 <div class="form-group">
                     <label for="expense_date" class="form-label">Datums</label>
-                    <input 
-                        type="date" 
-                        id="expense_date" 
-                        name="expense_date"
-                        class="form-input" 
-                        required
-                        value="<?php echo date('Y-m-d'); ?>"
-                    >
+                    <input type="date" id="expense_date" name="expense_date"
+                        class="form-input" required value="<?php echo date('Y-m-d'); ?>">
                 </div>
 
                 <div class="form-group">
                     <label for="expense_amount" class="form-label">Summa (€)</label>
                     <div class="amount-input-wrapper">
                         <span class="amount-prefix">-</span>
-                        <input 
-                            type="number" 
-                            id="expense_amount" 
-                            name="expense_amount"
-                            class="form-input amount-input" 
-                            placeholder="0.00"
-                            step="0.01"
-                            min="0.01"
-                            required
-                        >
+                        <input type="number" id="expense_amount" name="expense_amount"
+                            class="form-input amount-input" placeholder="0.00"
+                            step="0.01" min="0.01" required>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="expense_description" class="form-label">Apraksts</label>
-                    <input 
-                        type="text" 
-                        id="expense_description" 
-                        name="expense_description"
-                        class="form-input" 
-                        placeholder="Piemēram: Īre, Elektrība, Pārtika..."
-                        required
-                    >
+                    <input type="text" id="expense_description" name="expense_description"
+                        class="form-input" placeholder="Piemēram: Īre, Elektrība, Pārtika..." required>
                 </div>
 
                 <div class="form-group">
@@ -477,17 +472,11 @@ if ($next_month > 12) {
                 <h2 class="modal-title" id="dayModalTitle">Dienas transakcijas</h2>
                 <button class="modal-close" onclick="closeDayModal()">✕</button>
             </div>
-            <div id="dayModalContent" class="day-transactions-list">
-            </div>
+            <div id="dayModalContent" class="day-transactions-list"></div>
         </div>
     </div>
 
-    <script>
-        const transactionsData = <?php echo json_encode($transactions); ?>;
-        const monthlyIncome = <?php echo $total_income; ?>;
-        const monthlyExpense = <?php echo $total_expense; ?>;
-    </script>
-    <!-- Mobile bottom navigation (only visible on small screens) -->
+    <!-- Mobile bottom navigation -->
     <nav class="mobile-bottom-nav">
         <a href="calendar.php" class="mobile-nav-item active">
             <i class="fa-solid fa-calendar"></i>
@@ -513,8 +502,10 @@ if ($next_month > 12) {
 
     <script>
         const transactionsData = <?php echo json_encode($transactions); ?>;
-        const monthlyIncome = <?php echo $total_income; ?>;
-        const monthlyExpense = <?php echo $total_expense; ?>;
+        const monthlyIncome    = <?php echo $total_income; ?>;
+        const monthlyExpense   = <?php echo $total_expense; ?>;
+        // Active budgets with their spent/remaining amounts — used for budget-exceed warning
+        const activeBudgets    = <?php echo json_encode($activeBudgets); ?>;
     </script>
     <script src="../js/script.js"></script>
     <script src="../js/calendar.js"></script>

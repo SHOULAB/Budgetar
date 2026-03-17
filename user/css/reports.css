@@ -1,0 +1,221 @@
+/* reports.css — Reports / parskati page styles */
+
+.reports-main {
+    margin-left: 280px;
+    padding: 30px;
+    min-height: 100vh;
+    width: calc(100% - 280px);
+    box-sizing: border-box;
+}
+
+.reports-header    { margin-bottom: 30px; }
+.reports-title     { font-size: 28px; font-weight: 700; color: var(--text-primary); }
+.reports-subtitle  { color: var(--text-secondary); margin-top: 6px; font-size: 15px; }
+
+/* ── Summary stat cards ──────────────────────────────────────────────────── */
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 30px;
+}
+
+.summary-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.summary-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.summary-card-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); font-weight: 600; }
+.summary-card-value { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+.summary-card-sub   { font-size: 12px; color: var(--text-secondary); }
+
+.val-income  { color: var(--success); }
+.val-expense { color: var(--danger); }
+.val-balance { color: #8b5cf6; }
+.val-savings { color: var(--warning); }
+.val-neutral { color: var(--text-primary); }
+
+/* ── Savings rate bar ────────────────────────────────────────────────────── */
+
+.savings-rate-bar {
+    margin-top: 12px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.savings-rate-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    transition: width 1s ease;
+}
+
+/* ── Insights row ────────────────────────────────────────────────────────── */
+
+.insights-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.insight-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.insight-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.insight-icon.green  { background: rgba(16,185,129,0.15); color: var(--success); }
+.insight-icon.red    { background: rgba(239,68,68,0.15);  color: var(--danger); }
+.insight-icon.purple { background: rgba(139,92,246,0.15); color: #8b5cf6; }
+.insight-icon.yellow { background: rgba(245,158,11,0.15); color: var(--warning); }
+
+.insight-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.insight-value { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.insight-meta  { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+/* ── Charts layout ───────────────────────────────────────────────────────── */
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.chart-full { grid-column: 1 / -1; }
+
+.chart-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+}
+
+.chart-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.chart-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chart-card-title i    { color: var(--primary); }
+.chart-card-subtitle   { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.chart-wrapper         { position: relative; }
+
+/* ── Donut legend ────────────────────────────────────────────────────────── */
+
+.donut-legend { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+}
+
+.legend-dot   { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.legend-label { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); }
+.legend-val   { font-weight: 700; color: var(--text-primary); }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+    .charts-grid   { grid-template-columns: 1fr; }
+    .chart-full    { grid-column: 1; }
+    .insights-grid { grid-template-columns: repeat(2, 1fr); }
+    .summary-grid  { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+    .reports-main   { margin-left: 80px; padding: 16px; width: calc(100% - 80px); }
+    .summary-grid   { grid-template-columns: repeat(2, 1fr); }
+    .insights-grid  { grid-template-columns: repeat(2, 1fr); }
+    .summary-card-value { font-size: 20px; }
+    .chart-card     { padding: 16px; }
+    .chart-card-title { font-size: 14px; }
+}
+
+@media (max-width: 480px) {
+    .reports-main {
+        margin-left: 0;
+        padding: 12px 10px;
+        width: 100%;
+        padding-bottom: 76px;
+    }
+
+    .reports-title    { font-size: 20px; }
+    .reports-subtitle { font-size: 13px; }
+    .reports-header   { margin-bottom: 16px; }
+
+    .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+    .summary-card { padding: 14px 12px; gap: 4px; border-radius: 12px; }
+    .summary-card-label { font-size: 10px; }
+    .summary-card-value { font-size: 18px; }
+    .summary-card-sub   { font-size: 11px; }
+
+    .insights-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+    .insight-card  { padding: 12px; gap: 10px; flex-direction: column; align-items: flex-start; }
+    .insight-icon  { width: 36px; height: 36px; font-size: 16px; border-radius: 10px; }
+    .insight-value { font-size: 15px; }
+    .insight-meta  { font-size: 10px; word-break: break-word; }
+
+    .charts-grid { grid-template-columns: 1fr; gap: 14px; margin-bottom: 14px; }
+    .chart-full  { grid-column: 1; }
+    .chart-card  { padding: 14px 12px; border-radius: 14px; }
+    .chart-card-header  { margin-bottom: 14px; }
+    .chart-card-title   { font-size: 13px; gap: 7px; }
+    .chart-card-subtitle { font-size: 11px; }
+    .chart-wrapper canvas { max-height: 220px !important; }
+    .chart-wrapper[style] { max-width: 200px !important; }
+
+    .donut-legend { gap: 8px; margin-top: 14px; }
+    .legend-item  { font-size: 12px; }
+    .legend-dot   { width: 10px; height: 10px; }
+}
