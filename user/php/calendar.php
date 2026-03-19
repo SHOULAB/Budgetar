@@ -51,6 +51,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_expense'])) {
     }
 }
 
+// Delete transaction
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_transaction'])) {
+    $transaction_id = intval($_POST['transaction_id']);
+    
+    $stmt = mysqli_prepare($savienojums, "DELETE FROM BU_transactions WHERE id = ? AND user_id = ?");
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "ii", $transaction_id, $user_id);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+    }
+    
+    header('Location: calendar.php?month=' . $current_month . '&year=' . $current_year);
+    exit();
+}
+
 // gets current day
 $current_month = isset($_GET['month']) ? intval($_GET['month']) : date('n');
 $current_year = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
@@ -214,6 +229,7 @@ if ($next_month > 12) {
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/calendar.css">
+    <link rel="stylesheet" href="../css/budget.css">
     <link rel="icon" href="../../assets/image/logo.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
 </head>

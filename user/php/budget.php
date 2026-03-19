@@ -341,7 +341,7 @@ $total_remaining = $total_budget_amount - $total_spent;
                     </div>
                 </div>
                 <div class="stat-card stat-card-income">
-                    <div class="stat-card-icon"><i class="fa-solid fa-euro-sign"></i></div>
+                    <div class="stat-card-icon"><i class="fa-solid fa-money-bill"></i></div>
                     <div class="stat-card-content">
                         <div class="stat-card-label">Kopējais budžets</div>
                         <div class="stat-card-value">€<?php echo number_format($total_budget_amount, 2); ?></div>

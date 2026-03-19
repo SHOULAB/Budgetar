@@ -47,13 +47,29 @@ function openDayModal(day, month, year) {
         const recurringBadge = transaction.is_recurring_display
             ? '<span class="recurring-badge">🔄 Ikmēneša</span>' : '';
         
+        // Only show delete for real DB entries (recurring_display ones are projected copies)
+        const deleteBtn = !transaction.is_recurring_display
+            ? `<form method="POST" action="" class="delete-form" onsubmit="return confirmDelete()">
+                   <input type="hidden" name="delete_transaction" value="1">
+                   <input type="hidden" name="transaction_id" value="${transaction.id}">
+                   <button type="submit" class="delete-btn" title="Dzēst">
+                       <i class="fa-solid fa-trash"></i>
+                   </button>
+               </form>`
+            : `<span class="delete-btn-disabled" title="Dzēst ikmēneša ierakstu avota mēnesī">
+                   <i class="fa-solid fa-lock"></i>
+               </span>`;
+        
         html += `
             <div class="transaction-item ${typeClass}">
                 <div class="transaction-info">
                     <div class="transaction-description">${transaction.description} ${recurringBadge}</div>
                     <div class="transaction-type">${typeLabel}</div>
                 </div>
-                <div class="transaction-amount">${sign}€${parseFloat(transaction.amount).toFixed(2)}</div>
+                <div class="transaction-right">
+                    <div class="transaction-amount">${sign}€${parseFloat(transaction.amount).toFixed(2)}</div>
+                    ${deleteBtn}
+                </div>
             </div>
         `;
     });
@@ -61,6 +77,10 @@ function openDayModal(day, month, year) {
     content.innerHTML = html;
     modal.classList.add('modal-open');
     document.body.style.overflow = 'hidden';
+}
+
+function confirmDelete() {
+    return confirm('Vai tiešām vēlies dzēst šo ierakstu?');
 }
 
 // close day modal
@@ -130,9 +150,7 @@ function getBudgetBreaches(dateStr, amount) {
     if (!activeBudgets || activeBudgets.length === 0) return [];
 
     return activeBudgets.filter(b => {
-        // Only budgets whose period covers the selected expense date
         if (dateStr < b.start_date || dateStr > b.end_date) return false;
-        // Would adding this amount push spending over the budget?
         return (b.spent + amount) > b.budget_amount;
     });
 }
@@ -144,12 +162,14 @@ function showBudgetWarningModal(expenseAmount, expenseDate, breachedBudgets) {
     let existing = document.getElementById('budgetWarningModal');
     if (existing) existing.remove();
 
-    // Build a row for each breached budget
     let budgetRows = '';
     breachedBudgets.forEach(b => {
-        const newSpent    = b.spent + expenseAmount;
-        const over        = newSpent - b.budget_amount;
-        const pct         = Math.min((newSpent / b.budget_amount) * 100, 999).toFixed(0);
+        const newSpent = b.spent + expenseAmount;
+        const over     = newSpent - b.budget_amount;
+        const pct      = Math.min((newSpent / b.budget_amount) * 100, 999).toFixed(0);
+        const fillPct  = Math.min((b.spent / b.budget_amount) * 100, 100).toFixed(1);
+        const overPct  = Math.min((over / b.budget_amount) * 100, 100).toFixed(1);
+
         budgetRows += `
             <div class="bw-budget-row">
                 <div class="bw-budget-name">
@@ -158,28 +178,28 @@ function showBudgetWarningModal(expenseAmount, expenseDate, breachedBudgets) {
                 </div>
                 <div class="bw-budget-stats">
                     <div class="bw-stat">
-                        <span class="bw-stat-label">Budžets:</span>
+                        <span class="bw-stat-label">Budžets</span>
                         <span class="bw-stat-val">€${parseFloat(b.budget_amount).toFixed(2)}</span>
                     </div>
                     <div class="bw-stat">
-                        <span class="bw-stat-label">Tērēts:</span>
+                        <span class="bw-stat-label">Tērēts</span>
                         <span class="bw-stat-val expense">€${parseFloat(b.spent).toFixed(2)}</span>
                     </div>
                     <div class="bw-stat">
-                        <span class="bw-stat-label">Jauns izdevums:</span>
+                        <span class="bw-stat-label">Jauns izdevums</span>
                         <span class="bw-stat-val expense">€${expenseAmount.toFixed(2)}</span>
                     </div>
                     <div class="bw-stat bw-stat-over">
-                        <span class="bw-stat-label">Pārtērēts par:</span>
+                        <span class="bw-stat-label">Pārtērēts par</span>
                         <span class="bw-stat-val deficit">€${over.toFixed(2)}</span>
                     </div>
                 </div>
                 <div class="bw-progress-wrap">
                     <div class="bw-progress-track">
-                        <div class="bw-progress-fill" style="width:${Math.min(pct,100)}%"></div>
-                        <div class="bw-progress-over" style="width:${Math.min(over/b.budget_amount*100,100)}%"></div>
+                        <div class="bw-progress-fill" style="width:${fillPct}%"></div>
+                        <div class="bw-progress-over" style="width:${overPct}%"></div>
                     </div>
-                    <span class="bw-pct">${pct}% izmantots</span>
+                    <span class="bw-pct">${pct}%</span>
                 </div>
             </div>`;
     });
@@ -191,11 +211,11 @@ function showBudgetWarningModal(expenseAmount, expenseDate, breachedBudgets) {
     modal.className = 'modal modal-open';
     modal.innerHTML = `
         <div class="modal-content bw-modal-content">
-            <div class="modal-header bw-modal-header">
+            <div class="bw-modal-header">
                 <div class="bw-title-wrap">
                     <div class="bw-title-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
                     <div>
-                        <h2 class="modal-title">Budžeta brīdinājums</h2>
+                        <h2 class="modal-title bw-modal-title">Budžeta brīdinājums</h2>
                         <p class="bw-subtitle">Šis izdevums pārsniegs ${plural}</p>
                     </div>
                 </div>
@@ -232,7 +252,6 @@ function confirmBudgetExpense() {
     closeBudgetWarningModal();
     const expenseForm = document.querySelector('#expenseModal form');
     if (expenseForm) {
-        // Clone to strip event listeners, then submit directly
         const newForm = expenseForm.cloneNode(true);
         expenseForm.parentNode.replaceChild(newForm, expenseForm);
         newForm.submit();
@@ -247,7 +266,7 @@ function escHtml(str) {
 }
 
 
-// ─── Income-exceed warning modal (existing) ───────────────────────────────────
+// ─── Income-exceed warning modal ──────────────────────────────────────────────
 
 function showWarningModal(expenseAmount, newTotalExpense) {
     const deficit = newTotalExpense - monthlyIncome;
