@@ -7,17 +7,17 @@
 }
 
 :root {
-    --primary: #6366f1;
-    --primary-dark: #4f46e5;
-    --secondary: #8b5cf6;
-    --success: #10b981;
+    --primary: #14b8a6;
+    --primary-dark: #0d9488;
+    --secondary: #2dd4bf;
+    --success: #22c55e;
     --danger: #ef4444;
     --warning: #f59e0b;
-    --bg-dark: #0f172a;
-    --bg-light: #1e293b;
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --border: #334155;
+    --bg-dark: #0f1923;
+    --bg-light: #162032;
+    --text-primary: #e2e8f0;
+    --text-secondary: #8899a6;
+    --border: #1e3448;
 }
 
 body {

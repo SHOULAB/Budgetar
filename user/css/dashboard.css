@@ -76,7 +76,7 @@
 }
 
 .nav-item.active {
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(20, 184, 166, 0.1);
     color: var(--primary);
     border-left-color: var(--primary);
 }
@@ -162,7 +162,7 @@
 
 .stat-card-income .stat-card-icon  { background: rgba(16, 185, 129, 0.1); }
 .stat-card-expense .stat-card-icon { background: rgba(239, 68, 68, 0.1); }
-.stat-card-balance .stat-card-icon { background: rgba(99, 102, 241, 0.1); }
+.stat-card-balance .stat-card-icon { background: rgba(20, 184, 166, 0.1); }
 
 .stat-card-content { flex: 1; }
 
@@ -187,16 +187,16 @@
 
 /* Today's balance card */
 .stat-card-today {
-    background: rgba(139, 92, 246, 0.1);
-    border: 1px solid rgba(139, 92, 246, 0.3);
+    background: rgba(20, 184, 166, 0.1);
+    border: 1px solid rgba(20, 184, 166, 0.3);
 }
 
 .stat-card-today .stat-card-icon {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
     color: white;
 }
 
-.stat-card-today .stat-card-value { color: #8b5cf6; }
+.stat-card-today .stat-card-value { color: var(--primary); }
 
 .stat-card-highlight {
     font-size: 32px !important;
@@ -290,7 +290,7 @@
     left: 16px;
     font-size: 20px;
     font-weight: 600;
-    color: #ef4444;
+    color: var(--primary);
     pointer-events: none;
     z-index: 1;
 }
@@ -301,7 +301,7 @@
 
 .recurring-badge {
     display: inline-block;
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
     color: white;
     font-size: 11px;
     padding: 3px 8px;
@@ -333,7 +333,7 @@
 }
 
 .warning-details {
-    background: rgba(15, 23, 42, 0.5);
+    background: rgba(43, 45, 49, 0.8);
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 20px;
@@ -501,7 +501,7 @@
         left: 0;
         right: 0;
         height: 64px;
-        background: rgba(15, 23, 42, 0.97);
+        background: rgba(15, 25, 35, 0.97);
         backdrop-filter: blur(12px);
         border-top: 1px solid var(--border);
         z-index: 500;
@@ -530,6 +530,6 @@
     .mobile-nav-item.active,
     .mobile-nav-item:hover {
         color: var(--primary);
-        background: rgba(99, 102, 241, 0.1);
+        background: rgba(20, 184, 166, 0.1);
     }
 }

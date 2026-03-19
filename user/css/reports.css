@@ -43,7 +43,7 @@
 
 .val-income  { color: var(--success); }
 .val-expense { color: var(--danger); }
-.val-balance { color: #8b5cf6; }
+.val-balance { color: #14b8a6; }
 .val-savings { color: var(--warning); }
 .val-neutral { color: var(--text-primary); }
 
@@ -96,7 +96,7 @@
 
 .insight-icon.green  { background: rgba(16,185,129,0.15); color: var(--success); }
 .insight-icon.red    { background: rgba(239,68,68,0.15);  color: var(--danger); }
-.insight-icon.purple { background: rgba(139,92,246,0.15); color: #8b5cf6; }
+.insight-icon.purple { background: rgba(20, 184, 166, 0.15); color: #14b8a6; }
 .insight-icon.yellow { background: rgba(245,158,11,0.15); color: var(--warning); }
 
 .insight-label {
