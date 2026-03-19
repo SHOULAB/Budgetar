@@ -259,6 +259,7 @@ foreach ($budgets as $budget) {
 
 $total_remaining = $total_budget_amount - $total_spent;
 ?>
+<?php $active_page = 'budget'; ?>
 <!DOCTYPE html>
 <html lang="lv">
 <head>
@@ -275,41 +276,7 @@ $total_remaining = $total_budget_amount - $total_spent;
     <div class="dashboard-container">
 
         <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <img src="../../assets/image/logo.png" alt="Budgetar Logo" class="logo-img">
-                    <span class="logo-text">Budgetar</span>
-                </div>
-            </div>
-            <nav class="sidebar-nav">
-                <a href="calendar.php" class="nav-item">
-                    <span class="nav-icon"><i class="fa-solid fa-calendar"></i></span>
-                    <span class="nav-text">Kalendārs</span>
-                </a>
-                <a href="parskati.php" class="nav-item">
-                    <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
-                    <span class="nav-text">Pārskati</span>
-                </a>
-                <a href="budget.php" class="nav-item active">
-                    <span class="nav-icon"><i class="fa-solid fa-wallet"></i></span>
-                    <span class="nav-text">Budžets</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
-                    <span class="nav-text">Iestatījumi</span>
-                </a>
-            </nav>
-            <div class="sidebar-footer">
-                <div class="user-info">
-                    <div class="user-avatar"><?php echo strtoupper(substr($username, 0, 1)); ?></div>
-                    <div class="user-details">
-                        <div class="user-name"><?php echo htmlspecialchars($username); ?></div>
-                        <a href="logout.php" class="user-logout">Iziet</a>
-                    </div>
-                </div>
-            </div>
-        </aside>
+        <?php include __DIR__ . '/sidebar.php'; ?>
 
         <!-- Main Content -->
         <main class="dashboard-main">
@@ -632,29 +599,7 @@ $total_remaining = $total_budget_amount - $total_spent;
     </div>
 
 
-    <!-- Mobile bottom navigation -->
-    <nav class="mobile-bottom-nav">
-        <a href="calendar.php" class="mobile-nav-item">
-            <i class="fa-solid fa-calendar"></i>
-            <span>Kalendārs</span>
-        </a>
-        <a href="parskati.php" class="mobile-nav-item">
-            <i class="fa-solid fa-chart-pie"></i>
-            <span>Pārskati</span>
-        </a>
-        <a href="budget.php" class="mobile-nav-item active">
-            <i class="fa-solid fa-wallet"></i>
-            <span>Budžets</span>
-        </a>
-        <a href="#" class="mobile-nav-item">
-            <i class="fa-solid fa-gear"></i>
-            <span>Iestatījumi</span>
-        </a>
-        <a href="logout.php" class="mobile-nav-item">
-            <i class="fa-solid fa-right-from-bracket"></i>
-            <span>Iziet</span>
-        </a>
-    </nav>
+    <?php include __DIR__ . '/mobile_nav.php'; ?>
 
     <script src="../js/script.js"></script>
     <script src="../js/budget.js"></script>

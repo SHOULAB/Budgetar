@@ -22,7 +22,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    background: var(--bg-dark);
     color: var(--text-primary);
     line-height: 1.6;
     min-height: 100vh;
@@ -50,7 +50,7 @@ body {
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 10px 25px rgba(20, 184, 166, 0.4);
 }
 
 .btn-large {
@@ -120,7 +120,7 @@ body {
 .form-input:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
 }
 
 /* Links */
@@ -147,7 +147,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0f1923 0%, #162032 100%);
     padding: 20px;
 }
 
@@ -466,12 +466,12 @@ body {
 }
 
 .btn-edit {
-    background: rgba(99, 102, 241, 0.2);
+    background: rgba(20, 184, 166, 0.15);
     color: var(--primary);
 }
 
 .btn-edit:hover {
-    background: rgba(99, 102, 241, 0.3);
+    background: rgba(20, 184, 166, 0.25);
 }
 
 .btn-delete {
