@@ -4,25 +4,21 @@ https://kristovskis.lv/4pt/janeks/Exam-project/user/php/
 
 <div align="center">
 
-<img src="[your-logo-path-here](https://i.imgur.com/Z5Dodx1.png)" alt="Budgetar Logo" width="80"/>
-
-<div align="center">
-
 ### Sākumlapa
 <!-- Ievieto šeit sākumlapas ekrānuzņēmumu -->
-![Homepage](your-screenshot-homepage.png)
+![Main Menu](https://i.imgur.com/Z5Dodx1.png)
 
 ### Kalendāra skats
 <!-- Ievieto šeit kalendāra ekrānuzņēmumu -->
-![Calendar](your-screenshot-calendar.png)
+![Calendar](https://i.imgur.com/nn9QKOX.png)
 
 ### Finanšu pārskati
 <!-- Ievieto šeit pārskatu lapas ekrānuzņēmumu -->
-![Reports](your-screenshot-reports.png)
+![Reports](https://i.imgur.com/P5vClc3.png)
 
 ### Budžeta pārvaldība
 <!-- Ievieto šeit budžeta lapas ekrānuzņēmumu -->
-![Budget](your-screenshot-budget.png)
+![Budget](https://i.imgur.com/39v5zhE.png)
 
 </div>
 
