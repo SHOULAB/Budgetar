@@ -4,7 +4,7 @@ https://kristovskis.lv/4pt/janeks/Exam-project/user/php/
 
 <div align="center">
 
-<img src="[your-logo-path-here](https://ibb.co/v65Ls0dz)" alt="Budgetar Logo" width="80"/>
+<img src="[your-logo-path-here](https://i.imgur.com/Z5Dodx1.png)" alt="Budgetar Logo" width="80"/>
 
 <div align="center">
 
