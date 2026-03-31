@@ -515,7 +515,7 @@
     }
 
     .mobile-nav-item i { font-size: 18px; }
-
+    
     .mobile-nav-item.active,
     .mobile-nav-item:hover {
         color: var(--primary);

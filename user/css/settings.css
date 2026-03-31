@@ -1,0 +1,278 @@
+/* settings.css — Settings page layout, cards, theme picker, toggle */
+
+/* ── Settings layout ─────────────────────────────────────────────────────── */
+
+.settings-section {
+    margin-bottom: 40px;
+}
+
+.settings-section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.settings-section-icon {
+    width: 48px;
+    height: 48px;
+    background: rgba(20, 184, 166, 0.15);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+.settings-section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.settings-section-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+/* ── Settings card ───────────────────────────────────────────────────────── */
+
+.settings-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.settings-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0;
+}
+
+/* ── Settings row ────────────────────────────────────────────────────────── */
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px;
+    gap: 20px;
+}
+
+.settings-row-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.settings-row-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.settings-row-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* ── Theme preview cards ─────────────────────────────────────────────────── */
+
+.theme-toggle-group {
+    display: flex;
+    gap: 14px;
+    flex-shrink: 0;
+}
+
+.theme-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.theme-option input[type="radio"] {
+    display: none;
+}
+
+.theme-preview {
+    width: 120px;
+    height: 80px;
+    border-radius: 10px;
+    border: 2px solid var(--border);
+    overflow: hidden;
+    display: flex;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+}
+
+.theme-preview-dark {
+    background: #0f1923;
+}
+
+.theme-preview-light {
+    background: #f1f5f9;
+}
+
+.theme-preview .preview-sidebar {
+    width: 28%;
+    height: 100%;
+    flex-shrink: 0;
+}
+
+.theme-preview-dark .preview-sidebar  { background: #162032; border-right: 1px solid #1e3448; }
+.theme-preview-light .preview-sidebar { background: #e2e8f0; border-right: 1px solid #cbd5e1; }
+
+.theme-preview .preview-content {
+    flex: 1;
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.theme-preview .preview-bar {
+    height: 10px;
+    border-radius: 4px;
+}
+
+.theme-preview-dark .preview-bar  { background: rgba(255, 255, 255, 0.12); }
+.theme-preview-light .preview-bar { background: #cbd5e1; }
+
+.theme-preview .preview-bar.short { width: 60%; }
+
+/* Selected state */
+.theme-option.active .theme-preview,
+.theme-option:hover .theme-preview {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2);
+}
+
+/* Checkmark overlay when selected */
+.theme-option.active .theme-preview::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 11px;
+    color: white;
+    background: var(--primary);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 20px;
+    text-align: center;
+}
+
+.theme-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: color 0.25s ease;
+}
+
+.theme-option.active .theme-label { color: var(--primary); }
+
+/* ── Save actions ────────────────────────────────────────────────────────── */
+
+.settings-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+/* ── Light mode overrides ────────────────────────────────────────────────── */
+
+body.light-mode {
+    --bg-dark:        #f0f4f8;
+    --bg-light:       #ffffff;
+    --text-primary:   #1e293b;
+    --text-secondary: #64748b;
+    --border:         #cbd5e1;
+}
+
+body.light-mode .sidebar {
+    background: rgba(255, 255, 255, 0.85);
+    border-right-color: #cbd5e1;
+}
+
+body.light-mode .nav-item:hover,
+body.light-mode .mobile-nav-item:hover {
+    background: rgba(20, 184, 166, 0.08);
+}
+
+body.light-mode .stat-card,
+body.light-mode .calendar-container,
+body.light-mode .settings-card,
+body.light-mode .modal-content {
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+body.light-mode .form-input {
+    background: #f8fafc;
+    color: var(--text-primary);
+    border-color: #cbd5e1;
+}
+
+body.light-mode .form-input:focus {
+    border-color: var(--primary);
+    background: #fff;
+}
+
+body.light-mode .toggle-slider {
+    background: rgba(0, 0, 0, 0.06);
+    border-color: #cbd5e1;
+}
+
+body.light-mode .settings-section-icon {
+    background: rgba(20, 184, 166, 0.1);
+}
+
+body.light-mode .mobile-bottom-nav {
+    background: rgba(255, 255, 255, 0.97);
+    border-top-color: #cbd5e1;
+}
+
+body.light-mode .calendar-day {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: #cbd5e1;
+}
+
+body.light-mode .calendar-day:hover:not(.calendar-day-empty) {
+    background: rgba(20, 184, 166, 0.06);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    .theme-toggle-group { gap: 10px; }
+    .theme-preview      { width: 96px; height: 64px; }
+}
+
+@media (max-width: 480px) {
+    .settings-row {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 18px 16px;
+        gap: 16px;
+    }
+
+    .theme-toggle-group { width: 100%; justify-content: center; }
+    .theme-preview      { width: 130px; height: 86px; }
+
+    .settings-actions { justify-content: stretch; }
+    .settings-actions .btn { width: 100%; justify-content: center; }
+}

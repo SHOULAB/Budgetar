@@ -28,7 +28,7 @@
             <span class="nav-icon"><i class="fa-solid fa-wallet"></i></span>
             <span class="nav-text">Budžets</span>
         </a>
-        <a href="#" class="nav-item <?php echo ($active_page === 'settings')  ? 'active' : ''; ?>">
+        <a href="settings.php" class="nav-item <?php echo ($active_page === 'settings')  ? 'active' : ''; ?>">
             <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
             <span class="nav-text">Iestatījumi</span>
         </a>
