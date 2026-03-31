@@ -38,11 +38,21 @@
     });
 
     // ── On save: persist to localStorage so other pages pick it up ───────────
-    const form = document.getElementById('appearanceForm');
+    const form = document.getElementById('settingsForm');
     if (form) {
         form.addEventListener('submit', function () {
             const selected = this.querySelector('input[name="theme"]:checked');
             if (selected) localStorage.setItem(LS_KEY, selected.value);
+
+            const currency = document.getElementById('currencySelect');
+            const newCurrency = currency ? currency.value : 'EUR';
+            if (newCurrency) {
+                localStorage.setItem('budgetiva_currency', newCurrency);
+                // Notify other tabs/windows of currency change
+                if (typeof notifyCurrencyChange === 'function') {
+                    notifyCurrencyChange(newCurrency);
+                }
+            }
 
             const btn = this.querySelector('button[type="submit"]');
             if (btn) {
@@ -51,5 +61,51 @@
             }
         });
     }
+
+})();
+
+// ── Currency selector with live preview ─────────────────────────────────────
+(function () {
+    'use strict';
+
+    const currencySymbols = {
+        'EUR': '€',
+        'USD': '$',
+        'GBP': '£',
+        'JPY': '¥',
+        'CAD': '$',
+        'AUD': '$',
+        'CHF': 'CHF',
+        'CNY': '¥',
+        'INR': '₹',
+        'MXN': '$'
+    };
+
+    const LS_KEY = 'budgetiva_currency';
+    const select = document.getElementById('currencySelect');
+    const preview = document.getElementById('currencySymbol');
+
+    if (!select || !preview) return;
+
+    // ── Helper: update currency symbol display ──────────────────────────────
+    function updatePreview(currency) {
+        const symbol = currencySymbols[currency] || currency;
+        preview.textContent = symbol;
+    }
+
+    // ── On page load: apply saved preference ────────────────────────────────
+    const saved = localStorage.getItem(LS_KEY);
+    if (saved && currencySymbols[saved]) {
+        select.value = saved;
+        updatePreview(saved);
+    } else {
+        // Apply current selected value
+        updatePreview(select.value);
+    }
+
+    // ── Live preview on change (does NOT save yet) ─────────────────────────
+    select.addEventListener('change', function () {
+        updatePreview(this.value);
+    });
 
 })();

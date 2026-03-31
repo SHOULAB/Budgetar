@@ -9,6 +9,34 @@ require_once('../../assets/database.php');
 $user_id = $_SESSION['user_id'];
 $username = $_SESSION['username'];
 
+// ── Load current currency from DB - always refresh to ensure latest preference ──────────────────────────
+$_SESSION['currency'] = 'EUR'; // Default
+$stmt = mysqli_prepare($savienojums,
+    "SELECT setting_value FROM BU_user_settings WHERE user_id = ? AND setting_key = 'currency'");
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, "i", $user_id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    if ($row = mysqli_fetch_assoc($res)) {
+        $_SESSION['currency'] = $row['setting_value'];
+    }
+    mysqli_stmt_close($stmt);
+}
+
+$currencySymbols = [
+    'EUR' => '€',
+    'USD' => '$',
+    'GBP' => '£',
+    'JPY' => '¥',
+    'CAD' => '$',
+    'AUD' => '$',
+    'CHF' => 'CHF',
+    'CNY' => '¥',
+    'INR' => '₹',
+    'MXN' => '$'
+];
+$currSymbol = $currencySymbols[$_SESSION['currency']] ?? '€';
+
 //Income submit
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_income'])) {
     $date = $_POST['income_date'];
@@ -260,7 +288,7 @@ if ($next_month > 12) {
                     <div class="stat-card-icon"><i class="fa-solid fa-wallet"></i></div>
                     <div class="stat-card-content">
                         <div class="stat-card-label">Bilance</div>
-                        <div class="stat-card-value">€<?php echo number_format($today_balance, 2); ?></div>
+                        <div class="stat-card-value"><?php echo $currSymbol; ?><?php echo number_format($today_balance, 2); ?></div>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -269,21 +297,21 @@ if ($next_month > 12) {
                     <div class="stat-card-icon"><i class="fa-solid fa-sack-dollar"></i></div>
                     <div class="stat-card-content">
                         <div class="stat-card-label">Kopējie ienākumi</div>
-                        <div class="stat-card-value">€<?php echo number_format($total_income, 2); ?></div>
+                        <div class="stat-card-value"><?php echo $currSymbol; ?><?php echo number_format($total_income, 2); ?></div>
                     </div>
                 </div>
                 <div class="stat-card stat-card-expense">
                     <div class="stat-card-icon"><i class="fa-solid fa-sack-xmark"></i></div>
                     <div class="stat-card-content">
                         <div class="stat-card-label">Kopējie izdevumi</div>
-                        <div class="stat-card-value">€<?php echo number_format($total_expense, 2); ?></div>
+                        <div class="stat-card-value"><?php echo $currSymbol; ?><?php echo number_format($total_expense, 2); ?></div>
                     </div>
                 </div>
                 <div class="stat-card stat-card-balance">
                     <div class="stat-card-icon"><i class="fa-solid fa-landmark"></i></div>
                     <div class="stat-card-content">
                         <div class="stat-card-label">Mēneša bilance</div>
-                        <div class="stat-card-value">€<?php echo number_format($balance, 2); ?></div>
+                        <div class="stat-card-value"><?php echo $currSymbol; ?><?php echo number_format($balance, 2); ?></div>
                     </div>
                 </div>
             </div>
@@ -343,10 +371,10 @@ if ($next_month > 12) {
                             
                             echo '<div class="calendar-day-transactions">';
                             if ($day_income > 0) {
-                                echo '<div class="calendar-transaction-badge income">+€' . number_format($day_income, 0) . '</div>';
+                                echo '<div class="calendar-transaction-badge income">+' . $currSymbol . number_format($day_income, 0) . '</div>';
                             }
                             if ($day_expense > 0) {
-                                echo '<div class="calendar-transaction-badge expense">-€' . number_format($day_expense, 0) . '</div>';
+                                echo '<div class="calendar-transaction-badge expense">-' . $currSymbol . number_format($day_expense, 0) . '</div>';
                             }
                             echo '</div>';
                         }
@@ -376,7 +404,7 @@ if ($next_month > 12) {
                 </div>
 
                 <div class="form-group">
-                    <label for="income_amount" class="form-label">Summa (€)</label>
+                    <label for="income_amount" class="form-label">Summa (<?php echo $currSymbol; ?>)</label>
                     <input type="number" id="income_amount" name="income_amount"
                         class="form-input" placeholder="0.00" step="0.01" min="0.01" required>
                 </div>
@@ -418,7 +446,7 @@ if ($next_month > 12) {
                 </div>
 
                 <div class="form-group">
-                    <label for="expense_amount" class="form-label">Summa (€)</label>
+                    <label for="expense_amount" class="form-label">Summa (<?php echo $currSymbol; ?>)</label>
                     <div class="amount-input-wrapper">
                         <span class="amount-prefix">-</span>
                         <input type="number" id="expense_amount" name="expense_amount"
@@ -466,6 +494,13 @@ if ($next_month > 12) {
         const monthlyExpense   = <?php echo $total_expense; ?>;
         // Active budgets with their spent/remaining amounts — used for budget-exceed warning
         const activeBudgets    = <?php echo json_encode($activeBudgets); ?>;
+    </script>
+    <script src="../js/currency.js"></script>
+    <script>
+        // Initialize currency from PHP session
+        if ('<?php echo $_SESSION['currency'] ?? 'EUR'; ?>') {
+            localStorage.setItem('budgetiva_currency', '<?php echo $_SESSION['currency'] ?? 'EUR'; ?>');
+        }
     </script>
     <script src="../js/script.js"></script>
     <script src="../js/calendar.js"></script>

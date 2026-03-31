@@ -185,6 +185,80 @@
 
 .theme-option.active .theme-label { color: var(--primary); }
 
+/* ── Currency selector ──────────────────────────────────────────────────── */
+
+.currency-selector {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.currency-select {
+    padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 200px;
+    backdrop-filter: blur(10px);
+}
+
+.currency-select:hover {
+    border-color: var(--primary);
+    background: rgba(20, 184, 166, 0.08);
+    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.15);
+    transform: translateY(-1px);
+}
+
+.currency-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.2), 0 6px 20px rgba(20, 184, 166, 0.2);
+    background: rgba(20, 184, 166, 0.1);
+}
+
+.currency-select:active {
+    transform: translateY(0);
+}
+
+.currency-select option {
+    background: var(--bg-light);
+    color: var(--text-primary);
+    padding: 8px 12px;
+}
+
+.currency-select option:checked {
+    background: linear-gradient(#14b8a6, #14b8a6);
+    background-color: #14b8a6 !important;
+    color: white;
+}
+
+.currency-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 48px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.2) 0%, rgba(45, 212, 191, 0.1) 100%);
+    border: 2px solid var(--primary);
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 20px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.15);
+}
+
+.currency-preview:hover {
+    box-shadow: 0 8px 24px rgba(20, 184, 166, 0.25);
+    transform: scale(1.05);
+}
+
 /* ── Save actions ────────────────────────────────────────────────────────── */
 
 .settings-actions {
@@ -215,6 +289,40 @@ body.light-mode .form-input {
 body.light-mode .form-input:focus {
     border-color: var(--primary);
     background: #ffffff;
+}
+
+body.light-mode .currency-select {
+    background: #f8fafc;
+    color: var(--text-primary);
+    border-color: #cbd5e1;
+}
+
+body.light-mode .currency-select:hover {
+    border-color: var(--primary);
+    background: #f1f5f9;
+    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.12);
+}
+
+body.light-mode .currency-select:focus {
+    border-color: var(--primary);
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.15), 0 6px 20px rgba(20, 184, 166, 0.12);
+}
+
+body.light-mode .currency-select option {
+    background: #ffffff;
+    color: var(--text-primary);
+}
+
+body.light-mode .currency-preview {
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.12) 0%, rgba(45, 212, 191, 0.08) 100%);
+    border-color: var(--primary);
+    color: var(--primary);
+    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.12);
+}
+
+body.light-mode .currency-preview:hover {
+    box-shadow: 0 8px 24px rgba(20, 184, 166, 0.18);
 }
 
 body.light-mode .btn-secondary {

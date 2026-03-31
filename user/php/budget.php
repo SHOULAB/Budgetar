@@ -14,6 +14,34 @@ $username = $_SESSION['username'];
 $error    = '';
 $success  = '';
 
+// ── Load current currency from DB - always refresh to ensure latest preference ──────────────────────────
+$_SESSION['currency'] = 'EUR'; // Default
+$stmt = mysqli_prepare($savienojums,
+    "SELECT setting_value FROM BU_user_settings WHERE user_id = ? AND setting_key = 'currency'");
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, "i", $user_id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    if ($row = mysqli_fetch_assoc($res)) {
+        $_SESSION['currency'] = $row['setting_value'];
+    }
+    mysqli_stmt_close($stmt);
+}
+
+$currencySymbols = [
+    'EUR' => '€',
+    'USD' => '$',
+    'GBP' => '£',
+    'JPY' => '¥',
+    'CAD' => '$',
+    'AUD' => '$',
+    'CHF' => 'CHF',
+    'CNY' => '¥',
+    'INR' => '₹',
+    'MXN' => '$'
+];
+$currSymbol = $currencySymbols[$_SESSION['currency']] ?? '€';
+
 // Flash messages from Post-Redirect-Get
 $msg_map = [
     'added'   => 'Budžets veiksmīgi pievienots!',
@@ -312,21 +340,21 @@ $total_remaining = $total_budget_amount - $total_spent;
                     <div class="stat-card-icon"><i class="fa-solid fa-money-bill"></i></div>
                     <div class="stat-card-content">
                         <div class="stat-card-label">Kopējais budžets</div>
-                        <div class="stat-card-value">€<?php echo number_format($total_budget_amount, 2); ?></div>
+                        <div class="stat-card-value"><?php echo $currSymbol; ?><?php echo number_format($total_budget_amount, 2); ?></div>
                     </div>
                 </div>
                 <div class="stat-card stat-card-expense">
                     <div class="stat-card-icon"><i class="fa-solid fa-credit-card"></i></div>
                     <div class="stat-card-content">
                         <div class="stat-card-label">Tērēts</div>
-                        <div class="stat-card-value">€<?php echo number_format($total_spent, 2); ?></div>
+                        <div class="stat-card-value"><?php echo $currSymbol; ?><?php echo number_format($total_spent, 2); ?></div>
                     </div>
                 </div>
                 <div class="stat-card stat-card-balance">
                     <div class="stat-card-icon"><i class="fa-solid fa-piggy-bank"></i></div>
                     <div class="stat-card-content">
                         <div class="stat-card-label">Atlikums</div>
-                        <div class="stat-card-value">€<?php echo number_format($total_remaining, 2); ?></div>
+                        <div class="stat-card-value"><?php echo $currSymbol; ?><?php echo number_format($total_remaining, 2); ?></div>
                     </div>
                 </div>
             </div>
@@ -392,15 +420,15 @@ $total_remaining = $total_budget_amount - $total_spent;
                             <div class="budget-amounts">
                                 <div class="budget-amount-row">
                                     <span class="amount-label">Budžets:</span>
-                                    <span class="amount-value">€<?php echo number_format($budget['budget_amount'], 2); ?></span>
+                                    <span class="amount-value"><?php echo $currSymbol; ?><?php echo number_format($budget['budget_amount'], 2); ?></span>
                                 </div>
                                 <div class="budget-amount-row">
                                     <span class="amount-label">Tērēts:</span>
-                                    <span class="amount-value amount-spent">€<?php echo number_format($budget['spent'], 2); ?></span>
+                                    <span class="amount-value amount-spent"><?php echo $currSymbol; ?><?php echo number_format($budget['spent'], 2); ?></span>
                                 </div>
                                 <div class="budget-amount-row">
                                     <span class="amount-label">Atlikums:</span>
-                                    <span class="amount-value amount-remaining">€<?php echo number_format($budget['remaining'], 2); ?></span>
+                                    <span class="amount-value amount-remaining"><?php echo $currSymbol; ?><?php echo number_format($budget['remaining'], 2); ?></span>
                                 </div>
                             </div>
 
@@ -452,7 +480,7 @@ $total_remaining = $total_budget_amount - $total_spent;
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Summa (€) *</label>
+                    <label class="form-label">Summa (<?php echo $currSymbol; ?>) *</label>
                     <input type="number" name="budget_amount" class="form-input"
                            step="0.01" min="0" placeholder="100.00" required>
                 </div>
@@ -544,7 +572,7 @@ $total_remaining = $total_budget_amount - $total_spent;
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Summa (€) *</label>
+                    <label class="form-label">Summa (<?php echo $currSymbol; ?>) *</label>
                     <input type="number" name="budget_amount" id="edit_budget_amount"
                            class="form-input" step="0.01" min="0" required>
                 </div>
@@ -602,6 +630,13 @@ $total_remaining = $total_budget_amount - $total_spent;
 
     <?php include __DIR__ . '/mobile_nav.php'; ?>
 
+    <script src="../js/currency.js"></script>
+    <script>
+        // Initialize currency from PHP session
+        if ('<?php echo $_SESSION['currency'] ?? 'EUR'; ?>') {
+            localStorage.setItem('budgetiva_currency', '<?php echo $_SESSION['currency'] ?? 'EUR'; ?>');
+        }
+    </script>
     <script src="../js/script.js"></script>
     <script src="../js/budget.js"></script>
 </body>

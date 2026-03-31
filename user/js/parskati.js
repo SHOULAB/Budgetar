@@ -1,6 +1,7 @@
 // parskati.js — Reports page charts
 // Expects: labels, income, expense, trend, recurringData
 // injected as JSON by parskati.php before this script is loaded.
+// Requires: currency.js (loaded before this file)
 
 const savings = income.map((v, i) => parseFloat((v - expense[i]).toFixed(2)));
 
@@ -8,6 +9,11 @@ const gridColor  = 'rgba(255,255,255,0.07)';
 const textColor  = '#94a3b8';
 const fontFamily = "'Segoe UI', sans-serif";
 const isMobile   = window.innerWidth <= 480;
+
+// Helper to get current currency symbol dynamically
+function getCurrSymbolDynamic() {
+    return getCurrencySymbol(getCurrentCurrency());
+}
 
 Chart.defaults.color = textColor;
 Chart.defaults.font.family = fontFamily;
@@ -21,7 +27,7 @@ const tooltipDefaults = {
     titleFont: { weight: '700', size: 13 },
     bodyFont: { size: 12 },
     callbacks: {
-        label: ctx => ` €${parseFloat(ctx.raw).toFixed(2)}`
+        label: ctx => ` ${getCurrSymbolDynamic()}${parseFloat(ctx.raw).toFixed(2)}`
     }
 };
 
@@ -32,7 +38,7 @@ const xTicksMobile = isMobile
 
 const scalesDefaults = {
     x: { grid: { color: gridColor }, ticks: isMobile ? xTicksMobile : { color: textColor } },
-    y: { grid: { color: gridColor }, ticks: { color: textColor, callback: v => '€' + v } }
+    y: { grid: { color: gridColor }, ticks: { color: textColor, callback: v => getCurrSymbolDynamic() + v } }
 };
 
 // 1. Grouped bar chart — income vs expense per month
@@ -140,7 +146,7 @@ new Chart(document.getElementById('donutChart'), {
             legend: { display: false },
             tooltip: {
                 ...tooltipDefaults,
-                callbacks: { label: ctx => ` ${ctx.label}: €${parseFloat(ctx.raw).toFixed(2)}` }
+                callbacks: { label: ctx => ` ${ctx.label}: ${getCurrSymbolDynamic()}${parseFloat(ctx.raw).toFixed(2)}` }
             }
         }
     }
@@ -182,3 +188,11 @@ new Chart(document.getElementById('areaChart'), {
         scales: scalesDefaults
     }
 });
+
+// ── Listen for currency changes and reload the page to apply new currency ─────
+if (typeof onCurrencyChange === 'function') {
+    onCurrencyChange((newCurrency, symbol) => {
+        // Reload the page to apply the new currency to all charts
+        window.location.reload();
+    });
+}

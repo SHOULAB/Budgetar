@@ -9,6 +9,34 @@ require_once('../../assets/database.php');
 $user_id  = $_SESSION['user_id'];
 $username = $_SESSION['username'];
 
+// ── Load current currency from DB - always refresh to ensure latest preference ──────────────────────────
+$_SESSION['currency'] = 'EUR'; // Default
+$stmt = mysqli_prepare($savienojums,
+    "SELECT setting_value FROM BU_user_settings WHERE user_id = ? AND setting_key = 'currency'");
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, "i", $user_id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    if ($row = mysqli_fetch_assoc($res)) {
+        $_SESSION['currency'] = $row['setting_value'];
+    }
+    mysqli_stmt_close($stmt);
+}
+
+$currencySymbols = [
+    'EUR' => '€',
+    'USD' => '$',
+    'GBP' => '£',
+    'JPY' => '¥',
+    'CAD' => '$',
+    'AUD' => '$',
+    'CHF' => 'CHF',
+    'CNY' => '¥',
+    'INR' => '₹',
+    'MXN' => '$'
+];
+$currSymbol = $currencySymbols[$_SESSION['currency']] ?? '€';
+
 // --- 1. Monthly income vs expenses (last 12 months) ---
 $monthly_data = [];
 for ($i = 11; $i >= 0; $i--) {
@@ -130,17 +158,17 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
         <div class="summary-grid">
             <div class="summary-card">
                 <div class="summary-card-label">Kopējie ienākumi</div>
-                <div class="summary-card-value val-income">€<?php echo number_format($alltime['income'], 2); ?></div>
+                <div class="summary-card-value val-income"><?php echo $currSymbol; ?><?php echo number_format($alltime['income'], 2); ?></div>
                 <div class="summary-card-sub"><?php echo $alltime['income_count']; ?> transakcijas</div>
             </div>
             <div class="summary-card">
                 <div class="summary-card-label">Kopējie izdevumi</div>
-                <div class="summary-card-value val-expense">€<?php echo number_format($alltime['expense'], 2); ?></div>
+                <div class="summary-card-value val-expense"><?php echo $currSymbol; ?><?php echo number_format($alltime['expense'], 2); ?></div>
                 <div class="summary-card-sub"><?php echo $alltime['expense_count']; ?> transakcijas</div>
             </div>
             <div class="summary-card">
                 <div class="summary-card-label">Kopējā bilance</div>
-                <div class="summary-card-value val-balance">€<?php echo number_format($alltime_balance, 2); ?></div>
+                <div class="summary-card-value val-balance"><?php echo $currSymbol; ?><?php echo number_format($alltime_balance, 2); ?></div>
                 <div class="summary-card-sub">Visu laiku</div>
             </div>
             <div class="summary-card">
@@ -152,12 +180,12 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
             </div>
             <div class="summary-card">
                 <div class="summary-card-label">Vidējie mēneša ienākumi</div>
-                <div class="summary-card-value val-income">€<?php echo number_format($avg_income, 2); ?></div>
+                <div class="summary-card-value val-income"><?php echo $currSymbol; ?><?php echo number_format($avg_income, 2); ?></div>
                 <div class="summary-card-sub">Pēdējie 12 mēneši</div>
             </div>
             <div class="summary-card">
                 <div class="summary-card-label">Vidējie mēneša izdevumi</div>
-                <div class="summary-card-value val-expense">€<?php echo number_format($avg_expense, 2); ?></div>
+                <div class="summary-card-value val-expense"><?php echo $currSymbol; ?><?php echo number_format($avg_expense, 2); ?></div>
                 <div class="summary-card-sub">Pēdējie 12 mēneši</div>
             </div>
         </div>
@@ -169,7 +197,7 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
                 <div>
                     <div class="insight-label">Labākais mēnesis</div>
                     <div class="insight-value"><?php echo $best_month['label']; ?></div>
-                    <div class="insight-meta">Uzkrājums: €<?php echo number_format($best_month['income'] - $best_month['expense'], 2); ?></div>
+                    <div class="insight-meta">Uzkrājums: <?php echo $currSymbol; ?><?php echo number_format($best_month['income'] - $best_month['expense'], 2); ?></div>
                 </div>
             </div>
             <div class="insight-card">
@@ -177,7 +205,7 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
                 <div>
                     <div class="insight-label">Sliktākais mēnesis</div>
                     <div class="insight-value"><?php echo $worst_month['label']; ?></div>
-                    <div class="insight-meta">Bilance: €<?php echo number_format($worst_month['income'] - $worst_month['expense'], 2); ?></div>
+                    <div class="insight-meta">Bilance: <?php echo $currSymbol; ?><?php echo number_format($worst_month['income'] - $worst_month['expense'], 2); ?></div>
                 </div>
             </div>
             <div class="insight-card">
@@ -186,8 +214,8 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
                     <div class="insight-label">Ikmēneša transakcijas</div>
                     <div class="insight-value"><?php echo ($rec['recurring_income'] + $rec['recurring_expense']) > 0 ? 'Aktīvas' : 'Nav'; ?></div>
                     <div class="insight-meta">
-                        Ienākumi: €<?php echo number_format($rec['recurring_income'], 2); ?> |
-                        Izdevumi: €<?php echo number_format($rec['recurring_expense'], 2); ?>
+                        Ienākumi: <?php echo $currSymbol; ?><?php echo number_format($rec['recurring_income'], 2); ?> |
+                        Izdevumi: <?php echo $currSymbol; ?><?php echo number_format($rec['recurring_expense'], 2); ?>
                     </div>
                 </div>
             </div>
@@ -196,7 +224,7 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
                 <div>
                     <div class="insight-label">Ienākumi vs Izdevumi</div>
                     <div class="insight-value"><?php echo $ratio; ?>x</div>
-                    <div class="insight-meta">Par katru €1 izdevumiem nopelnīti €<?php echo $ratio; ?></div>
+                    <div class="insight-meta">Par katru <?php echo $currSymbol; ?>1 izdevumiem nopelnīti <?php echo $currSymbol; ?><?php echo $ratio; ?></div>
                 </div>
             </div>
         </div>
@@ -257,19 +285,19 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
                 <div class="donut-legend">
                     <div class="legend-item">
                         <span class="legend-label"><span class="legend-dot" style="background:#10b981"></span>Ikmēneša ienākumi</span>
-                        <span class="legend-val">€<?php echo number_format($rec['recurring_income'], 2); ?></span>
+                        <span class="legend-val"><?php echo $currSymbol; ?><?php echo number_format($rec['recurring_income'], 2); ?></span>
                     </div>
                     <div class="legend-item">
                         <span class="legend-label"><span class="legend-dot" style="background:#34d399"></span>Vienreizēji ienākumi</span>
-                        <span class="legend-val">€<?php echo number_format($rec['onetime_income'], 2); ?></span>
+                        <span class="legend-val"><?php echo $currSymbol; ?><?php echo number_format($rec['onetime_income'], 2); ?></span>
                     </div>
                     <div class="legend-item">
                         <span class="legend-label"><span class="legend-dot" style="background:#ef4444"></span>Ikmēneša izdevumi</span>
-                        <span class="legend-val">€<?php echo number_format($rec['recurring_expense'], 2); ?></span>
+                        <span class="legend-val"><?php echo $currSymbol; ?><?php echo number_format($rec['recurring_expense'], 2); ?></span>
                     </div>
                     <div class="legend-item">
                         <span class="legend-label"><span class="legend-dot" style="background:#fca5a5"></span>Vienreizēji izdevumi</span>
-                        <span class="legend-val">€<?php echo number_format($rec['onetime_expense'], 2); ?></span>
+                        <span class="legend-val"><?php echo $currSymbol; ?><?php echo number_format($rec['onetime_expense'], 2); ?></span>
                     </div>
                 </div>
             </div>
@@ -300,6 +328,13 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
     const expense       = <?php echo json_encode(array_column($monthly_data, 'expense')); ?>;
     const trend         = <?php echo json_encode($balance_trend); ?>;
     const recurringData = <?php echo json_encode($rec); ?>;
+</script>
+<script src="../js/currency.js"></script>
+<script>
+    // Initialize currency from PHP session
+    if ('<?php echo $_SESSION['currency'] ?? 'EUR'; ?>') {
+        localStorage.setItem('budgetiva_currency', '<?php echo $_SESSION['currency'] ?? 'EUR'; ?>');
+    }
 </script>
 <script src="../js/parskati.js"></script>
 </body>
