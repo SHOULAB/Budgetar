@@ -205,3 +205,94 @@
     updatePreview(initialCurrency);
 
 })();
+
+(function () {
+    'use strict';
+
+    function closeDeleteAccountModal() {
+        const modal = document.getElementById('deleteAccountModal');
+        if (!modal) return;
+        modal.classList.remove('modal-open');
+        setTimeout(() => modal.remove(), 200);
+    }
+
+    function showDeleteAccountModal() {
+        if (document.getElementById('deleteAccountModal')) return;
+
+        const modal = document.createElement('div');
+        modal.id = 'deleteAccountModal';
+        modal.className = 'modal modal-open';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Apstiprināt konta dzēšanu</h2>
+                    <button type="button" class="modal-close" aria-label="Aizvērt">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="deletePassword" class="form-label">Ievadiet paroli</label>
+                        <input type="password" id="deletePassword" class="form-input" placeholder="Parole" autocomplete="current-password">
+                        <span id="deletePasswordError" class="form-hint" style="color: #ff6b6b; display: none;"></span>
+                    </div>
+                    <p>Vai tiešām vēlaties dzēst savu kontu? Šī darbība ir neatgriezeniska un tiks izdzēsti visi jūsu dati.</p>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="deleteAccountCancelBtn">Atcelt</button>
+                    <button type="button" class="btn btn-danger" id="deleteAccountConfirmBtn">
+                        <i class="fa-solid fa-trash-can"></i> Dzēst kontu
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        modal.querySelector('.modal-close').addEventListener('click', closeDeleteAccountModal);
+        modal.querySelector('#deleteAccountCancelBtn').addEventListener('click', closeDeleteAccountModal);
+        modal.querySelector('#deleteAccountConfirmBtn').addEventListener('click', function () {
+            const passwordInput = modal.querySelector('#deletePassword');
+            const passwordError = modal.querySelector('#deletePasswordError');
+            if (!passwordInput || !passwordInput.value.trim()) {
+                if (passwordError) {
+                    passwordError.textContent = 'Lūdzu ievadiet savu paroli.';
+                    passwordError.style.display = 'block';
+                }
+                passwordInput.focus();
+                return;
+            }
+
+            if (passwordError) {
+                passwordError.textContent = '';
+                passwordError.style.display = 'none';
+            }
+
+            const form = document.getElementById('settingsForm');
+            if (!form) return;
+
+            const hiddenDelete = document.createElement('input');
+            hiddenDelete.type = 'hidden';
+            hiddenDelete.name = 'delete_account';
+            hiddenDelete.value = '1';
+            form.appendChild(hiddenDelete);
+
+            const hiddenPassword = document.createElement('input');
+            hiddenPassword.type = 'hidden';
+            hiddenPassword.name = 'delete_password';
+            hiddenPassword.value = passwordInput.value;
+            form.appendChild(hiddenPassword);
+
+            form.submit();
+        });
+
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) {
+                closeDeleteAccountModal();
+            }
+        });
+    }
+
+    const deleteBtn = document.getElementById('deleteAccountBtn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', showDeleteAccountModal);
+    }
+})();

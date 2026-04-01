@@ -87,6 +87,8 @@
     flex: 1;
     min-width: 240px;
     max-width: 420px;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .settings-row-field .form-input {
@@ -344,6 +346,10 @@
     margin-top: 20px;
 }
 
+.settings-actions .btn + .btn {
+    margin-left: 12px;
+}
+
 /* ── Light mode overrides ────────────────────────────────────────────────── */
 /* Covers: style.css, dashboard.css, calendar.css, reports.css, budget.css   */
 
@@ -501,6 +507,18 @@ body.light-mode .modal-header {
 body.light-mode .modal-close:hover {
     background: rgba(0, 0, 0, 0.06);
     color: var(--text-primary);
+}
+
+.modal-header {
+    padding: 20px 24px;
+}
+
+#deleteAccountModal .form-group {
+    margin: 12px 0;
+}
+
+.modal-actions {
+    padding: 20px 24px 24px;
 }
 
 body.light-mode .warning-details {
