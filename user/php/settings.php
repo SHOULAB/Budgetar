@@ -75,8 +75,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_account'])) {
     }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_account'])) {
+    $reset_password = trim($_POST['reset_password'] ?? '');
+
+    if ($reset_password === '') {
+        $error_message = 'Lūdzu ievadiet savu paroli, lai apstiprinātu konta atiestatīšanu.';
+    } else {
+        $stmt_pass = mysqli_prepare($savienojums, "SELECT password FROM BU_users WHERE id = ?");
+        if ($stmt_pass) {
+            mysqli_stmt_bind_param($stmt_pass, "i", $user_id);
+            mysqli_stmt_execute($stmt_pass);
+            mysqli_stmt_bind_result($stmt_pass, $current_password_hash);
+            mysqli_stmt_fetch($stmt_pass);
+            mysqli_stmt_close($stmt_pass);
+
+            if (!password_verify($reset_password, $current_password_hash)) {
+                $error_message = 'Parole ir nepareiza. Konts netika atiestatīts.';
+            }
+        } else {
+            $error_message = 'Kļūda pārbaudot paroli. Lūdzu mēģiniet vēlāk.';
+        }
+    }
+
+    if ($error_message === '') {
+        if (isset($_COOKIE['remember_token'])) {
+            $token = $_COOKIE['remember_token'];
+            $stmt = mysqli_prepare($savienojums, "DELETE FROM BU_remember_tokens WHERE token = ?");
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, "s", $token);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
+            setcookie('remember_token', '', time() - 3600, '/', '', false, true);
+        }
+
+        $stmt = mysqli_prepare($savienojums, "DELETE FROM BU_remember_tokens WHERE user_id = ?");
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "i", $user_id);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+        }
+
+        $stmt = mysqli_prepare($savienojums, "DELETE FROM BU_transactions WHERE user_id = ?");
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "i", $user_id);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+        }
+
+        $stmt = mysqli_prepare($savienojums, "DELETE FROM BU_budgets WHERE user_id = ?");
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "i", $user_id);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+        }
+
+        $stmt = mysqli_prepare($savienojums, "DELETE FROM BU_user_settings WHERE user_id = ?");
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "i", $user_id);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+        }
+
+        $success_message = 'Jūsu konta dati ir atiestatīti. Varat sākt no jauna.';
+    }
+}
+
 // ── Handle preference saves ───────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings']) && !isset($_POST['delete_account'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings']) && !isset($_POST['delete_account']) && !isset($_POST['reset_account'])) {
     $theme = $_POST['theme'] === 'light' ? 'light' : 'dark';
     $allowed_currencies = ['EUR', 'USD', 'GBP', 'JPY', 'CHF', 'INR', 'RUB', 'TRY', 'KRW'];
     $currency = isset($_POST['currency']) && in_array($_POST['currency'], $allowed_currencies) 
@@ -517,6 +583,19 @@ if ($stmt) {
                             </div>
                             <div class="settings-divider"></div>
                                     <div class="settings-row">
+                                <div class="settings-row-info">
+                                    <span class="settings-row-label">Atiestatīt kontu</span>
+                                    <span class="settings-row-desc">Notīra visus budžetus, darījumus un iestatījumus, bet saglabā jūsu konta informāciju.</span>
+                                </div>
+                                <div class="settings-row-field">
+                                    <button type="button" id="resetAccountBtn" class="btn btn-danger">
+                                        <i class="fa-solid fa-rotate-right"></i>
+                                        Atiestatīt kontu
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="settings-divider"></div>
+                            <div class="settings-row">
                                 <div class="settings-row-info">
                                     <span class="settings-row-label">Dzēst kontu</span>
                                     <span class="settings-row-desc">Šī darbība ir neatgriezeniska — visi dati tiks dzēsti.</span>

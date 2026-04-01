@@ -209,37 +209,49 @@
 (function () {
     'use strict';
 
-    function closeDeleteAccountModal() {
-        const modal = document.getElementById('deleteAccountModal');
+    function closeAccountModal(modalId) {
+        const modal = document.getElementById(modalId);
         if (!modal) return;
         modal.classList.remove('modal-open');
         setTimeout(() => modal.remove(), 200);
     }
 
-    function showDeleteAccountModal() {
-        if (document.getElementById('deleteAccountModal')) return;
+    function showActionModal(type) {
+        const modalId = type === 'reset' ? 'resetAccountModal' : 'deleteAccountModal';
+        if (document.getElementById(modalId)) return;
+
+        const isReset = type === 'reset';
+        const title = isReset ? 'Apstiprināt konta atiestatīšanu' : 'Apstiprināt konta dzēšanu';
+        const description = isReset
+            ? 'Vai tiešām vēlaties atiestatīt savu kontu? Tiks noņemti visi budžeti, darījumi un iestatījumi, bet jūsu pieteikšanās dati paliks.'
+            : 'Vai tiešām vēlaties dzēst savu kontu? Šī darbība ir neatgriezeniska un tiks izdzēsti visi jūsu dati.';
+        const confirmLabel = isReset ? 'Atiestatīt kontu' : 'Dzēst kontu';
+        const confirmClass = 'btn btn-danger';
+        const confirmIcon = isReset ? 'fa-solid fa-rotate-right' : 'fa-solid fa-trash-can';
+        const actionName = isReset ? 'reset_account' : 'delete_account';
+        const passwordName = isReset ? 'reset_password' : 'delete_password';
 
         const modal = document.createElement('div');
-        modal.id = 'deleteAccountModal';
+        modal.id = modalId;
         modal.className = 'modal modal-open';
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2 class="modal-title">Apstiprināt konta dzēšanu</h2>
+                    <h2 class="modal-title">${title}</h2>
                     <button type="button" class="modal-close" aria-label="Aizvērt">✕</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="deletePassword" class="form-label">Ievadiet paroli</label>
-                        <input type="password" id="deletePassword" class="form-input" placeholder="Parole" autocomplete="current-password">
-                        <span id="deletePasswordError" class="form-hint" style="color: #ff6b6b; display: none;"></span>
+                        <label for="${modalId}Password" class="form-label">Ievadiet paroli</label>
+                        <input type="password" id="${modalId}Password" class="form-input" placeholder="Parole" autocomplete="current-password">
+                        <span id="${modalId}PasswordError" class="form-hint" style="color: #ff6b6b; display: none;"></span>
                     </div>
-                    <p>Vai tiešām vēlaties dzēst savu kontu? Šī darbība ir neatgriezeniska un tiks izdzēsti visi jūsu dati.</p>
+                    <p>${description}</p>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="deleteAccountCancelBtn">Atcelt</button>
-                    <button type="button" class="btn btn-danger" id="deleteAccountConfirmBtn">
-                        <i class="fa-solid fa-trash-can"></i> Dzēst kontu
+                    <button type="button" class="btn btn-secondary" id="${modalId}CancelBtn">Atcelt</button>
+                    <button type="button" class="${confirmClass}" id="${modalId}ConfirmBtn">
+                        <i class="${confirmIcon}"></i> ${confirmLabel}
                     </button>
                 </div>
             </div>
@@ -247,11 +259,15 @@
 
         document.body.appendChild(modal);
 
-        modal.querySelector('.modal-close').addEventListener('click', closeDeleteAccountModal);
-        modal.querySelector('#deleteAccountCancelBtn').addEventListener('click', closeDeleteAccountModal);
-        modal.querySelector('#deleteAccountConfirmBtn').addEventListener('click', function () {
-            const passwordInput = modal.querySelector('#deletePassword');
-            const passwordError = modal.querySelector('#deletePasswordError');
+        modal.querySelector('.modal-close').addEventListener('click', function () {
+            closeAccountModal(modalId);
+        });
+        modal.querySelector(`#${modalId}CancelBtn`).addEventListener('click', function () {
+            closeAccountModal(modalId);
+        });
+        modal.querySelector(`#${modalId}ConfirmBtn`).addEventListener('click', function () {
+            const passwordInput = modal.querySelector(`#${modalId}Password`);
+            const passwordError = modal.querySelector(`#${modalId}PasswordError`);
             if (!passwordInput || !passwordInput.value.trim()) {
                 if (passwordError) {
                     passwordError.textContent = 'Lūdzu ievadiet savu paroli.';
@@ -269,15 +285,15 @@
             const form = document.getElementById('settingsForm');
             if (!form) return;
 
-            const hiddenDelete = document.createElement('input');
-            hiddenDelete.type = 'hidden';
-            hiddenDelete.name = 'delete_account';
-            hiddenDelete.value = '1';
-            form.appendChild(hiddenDelete);
+            const hiddenAction = document.createElement('input');
+            hiddenAction.type = 'hidden';
+            hiddenAction.name = actionName;
+            hiddenAction.value = '1';
+            form.appendChild(hiddenAction);
 
             const hiddenPassword = document.createElement('input');
             hiddenPassword.type = 'hidden';
-            hiddenPassword.name = 'delete_password';
+            hiddenPassword.name = passwordName;
             hiddenPassword.value = passwordInput.value;
             form.appendChild(hiddenPassword);
 
@@ -286,13 +302,22 @@
 
         modal.addEventListener('click', function (event) {
             if (event.target === modal) {
-                closeDeleteAccountModal();
+                closeAccountModal(modalId);
             }
         });
     }
 
     const deleteBtn = document.getElementById('deleteAccountBtn');
     if (deleteBtn) {
-        deleteBtn.addEventListener('click', showDeleteAccountModal);
+        deleteBtn.addEventListener('click', function () {
+            showActionModal('delete');
+        });
+    }
+
+    const resetBtn = document.getElementById('resetAccountBtn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function () {
+            showActionModal('reset');
+        });
     }
 })();

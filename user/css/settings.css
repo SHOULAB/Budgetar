@@ -91,8 +91,13 @@
     justify-content: flex-end;
 }
 
-.settings-row-field .form-input {
+.settings-row-field .form-input,
+.settings-row-field button {
     width: 100%;
+}
+
+.settings-row-field button {
+    max-width: 280px;
 }
 
 /* ── Theme preview cards ─────────────────────────────────────────────────── */
@@ -513,7 +518,8 @@ body.light-mode .modal-close:hover {
     padding: 20px 24px;
 }
 
-#deleteAccountModal .form-group {
+#deleteAccountModal .form-group,
+#resetAccountModal .form-group {
     margin: 12px 0;
 }
 
