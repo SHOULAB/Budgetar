@@ -123,6 +123,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
         }
     }
 
+    // Save password
+    $password_current = trim($_POST['password_current'] ?? '');
+    $password_new     = trim($_POST['password_new'] ?? '');
+    $password_confirm = trim($_POST['password_confirm'] ?? '');
+
+    if ($password_current !== '' || $password_new !== '' || $password_confirm !== '') {
+        if ($password_current === '' || $password_new === '' || $password_confirm === '') {
+            $success = false;
+            $error_message = 'Lūdzu aizpildiet visus paroles laukus.';
+        } elseif ($password_new !== $password_confirm) {
+            $success = false;
+            $error_message = 'Jaunā parole un tās apstiprinājums nesakrīt.';
+        } elseif (strlen($password_new) < 8) {
+            $success = false;
+            $error_message = 'Jaunajai parolei jābūt vismaz 8 simbolus garai.';
+        } elseif ($success) {
+            $stmt_pass = mysqli_prepare($savienojums, "SELECT password FROM BU_users WHERE id = ?");
+            if ($stmt_pass) {
+                mysqli_stmt_bind_param($stmt_pass, "i", $user_id);
+                mysqli_stmt_execute($stmt_pass);
+                mysqli_stmt_bind_result($stmt_pass, $current_password_hash);
+                mysqli_stmt_fetch($stmt_pass);
+                mysqli_stmt_close($stmt_pass);
+
+                if (!password_verify($password_current, $current_password_hash)) {
+                    $success = false;
+                    $error_message = 'Pašreizējā parole ir nepareiza.';
+                } else {
+                    $new_password_hash = password_hash($password_new, PASSWORD_DEFAULT);
+                    $stmt_update_pass = mysqli_prepare($savienojums, "UPDATE BU_users SET password = ? WHERE id = ?");
+                    if ($stmt_update_pass) {
+                        mysqli_stmt_bind_param($stmt_update_pass, "si", $new_password_hash, $user_id);
+                        if (!mysqli_stmt_execute($stmt_update_pass)) {
+                            $success = false;
+                            $error_message = 'Kļūda saglabājot jauno paroli. Lūdzu mēģiniet vēlāk.';
+                        }
+                        mysqli_stmt_close($stmt_update_pass);
+                    } else {
+                        $success = false;
+                        $error_message = 'Kļūda saglabājot jauno paroli. Lūdzu mēģiniet vēlāk.';
+                    }
+                }
+            } else {
+                $success = false;
+                $error_message = 'Kļūda pārbaudot paroli. Lūdzu mēģiniet vēlāk.';
+            }
+        }
+    }
+
     // Save theme
     $stmt = mysqli_prepare($savienojums,
         "INSERT INTO BU_user_settings (user_id, setting_key, setting_value)
@@ -374,6 +423,34 @@ if ($stmt) {
                                 </div>
                                 <div class="settings-row-field">
                                     <input type="email" name="email" id="accountEmail" class="form-input" value="<?php echo htmlspecialchars($current_email); ?>" required placeholder="E-pasts">
+                                </div>
+                            </div>
+                            <div class="settings-divider"></div>
+                            <div class="settings-row">
+                                <div class="settings-row-info">
+                                    <span class="settings-row-label">Pašreizējā parole</span>
+                                    <span class="settings-row-desc">Ievadiet pašreizējo paroli, lai varētu to mainīt.</span>
+                                </div>
+                                <div class="settings-row-field">
+                                    <input type="password" name="password_current" id="passwordCurrent" class="form-input" placeholder="Pašreizējā parole">
+                                </div>
+                            </div>
+                            <div class="settings-row">
+                                <div class="settings-row-info">
+                                    <span class="settings-row-label">Jaunā parole</span>
+                                    <span class="settings-row-desc">Parolei jābūt vismaz 8 simbolus garai.</span>
+                                </div>
+                                <div class="settings-row-field">
+                                    <input type="password" name="password_new" id="passwordNew" class="form-input" placeholder="Jaunā parole">
+                                </div>
+                            </div>
+                            <div class="settings-row">
+                                <div class="settings-row-info">
+                                    <span class="settings-row-label">Apstipriniet paroli</span>
+                                    <span class="settings-row-desc">Ievadiet jauno paroli vēlreiz, lai apstiprinātu.</span>
+                                </div>
+                                <div class="settings-row-field">
+                                    <input type="password" name="password_confirm" id="passwordConfirm" class="form-input" placeholder="Apstipriniet paroli">
                                 </div>
                             </div>
                         </div>
