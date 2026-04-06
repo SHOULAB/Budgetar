@@ -13,32 +13,26 @@ function closeAddModal() {
 }
 
 function openEditModal(budget) {
-    document.getElementById('edit_budget_id').value        = budget.id;
-    document.getElementById('edit_budget_name').value      = budget.budget_name;
-    document.getElementById('edit_budget_amount').value    = budget.budget_amount;
+    document.getElementById('edit_budget_id').value         = budget.id;
+    document.getElementById('edit_budget_name').value       = budget.budget_name;
+    document.getElementById('edit_budget_amount').value     = budget.budget_amount;
     document.getElementById('edit_warning_threshold').value = budget.warning_threshold;
 
-    // Populate recurring days if this budget has them
-    const editDaysContainer = document.getElementById('edit_recurring_days_container');
-    const editToggle        = document.getElementById('edit_recurring_toggle');
-    const editPreview       = document.getElementById('edit_recurring_preview');
-    const editHidden        = document.getElementById('edit_recurring_days');
+    const editSection   = document.getElementById('edit_recurring_section');
+    const editContainer = document.getElementById('edit_recurring_days_container');
+    const editHidden    = document.getElementById('edit_recurring_days');
 
     if (budget.recurring_days && budget.recurring_days !== '') {
         const selectedDays = budget.recurring_days.split(',').map(Number);
-        editDaysContainer.querySelectorAll('.day-pill').forEach(pill => {
+        editContainer.querySelectorAll('.day-pill').forEach(pill => {
             pill.classList.toggle('selected', selectedDays.includes(parseInt(pill.dataset.day)));
         });
         editHidden.value = budget.recurring_days;
-        editDaysContainer.style.display = 'block';
-        editToggle.checked = true;
-        if (editPreview) updateRecurringPreview(selectedDays, editPreview, null, null);
+        editSection.style.display = 'block';
     } else {
-        editDaysContainer.style.display = 'none';
-        editToggle.checked = false;
+        editContainer.querySelectorAll('.day-pill').forEach(p => p.classList.remove('selected'));
         editHidden.value = '';
-        editDaysContainer.querySelectorAll('.day-pill').forEach(p => p.classList.remove('selected'));
-        if (editPreview) { editPreview.textContent = ''; editPreview.style.display = 'none'; }
+        editSection.style.display = 'none';
     }
 
     document.getElementById('editModal').classList.add('modal-open');
@@ -255,26 +249,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── EDIT MODAL ─────────────────────────────────────────────────────────────
 
-    const editToggle    = document.getElementById('edit_recurring_toggle');
     const editContainer = document.getElementById('edit_recurring_days_container');
-    const editPreview   = document.getElementById('edit_recurring_preview');
     const editHidden    = document.getElementById('edit_recurring_days');
 
-    if (editToggle && editContainer) {
-        editToggle.addEventListener('change', function () {
-            if (this.checked) {
-                editContainer.style.display = 'block';
-            } else {
-                editContainer.style.display = 'none';
-                editContainer.querySelectorAll('.day-pill').forEach(p => p.classList.remove('selected'));
-                if (editPreview) { editPreview.innerHTML = ''; editPreview.style.display = 'none'; }
-                if (editHidden)  editHidden.value = '';
-            }
-        });
-
-        initDayPicker(editContainer, function (selected) {
-            if (editHidden) editHidden.value = selected.join(',');
-            if (editPreview) updateRecurringPreview(selected, editPreview, null, null);
+    if (editContainer) {
+        editContainer.querySelectorAll('.day-pill').forEach(pill => {
+            pill.addEventListener('click', function () {
+                const currentlySelected = editContainer.querySelectorAll('.day-pill.selected');
+                // Prevent deselecting the last selected day
+                if (this.classList.contains('selected') && currentlySelected.length === 1) {
+                    return;
+                }
+                this.classList.toggle('selected');
+                const selected = Array.from(editContainer.querySelectorAll('.day-pill.selected'))
+                                      .map(p => parseInt(p.dataset.day));
+                if (editHidden) editHidden.value = selected.join(',');
+            });
         });
     }
 });
