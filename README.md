@@ -1,6 +1,6 @@
 # Exam-project Budgetar
 
-https://kristovskis.lv/4pt/janeks/Exam-project/user/php/
+https://kristovskis.lv/4pt/janeks/Budgetar/user/php/
 
 ---
 
