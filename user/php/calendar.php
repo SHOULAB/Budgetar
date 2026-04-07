@@ -56,6 +56,33 @@ function ensureRecurringStopDateColumn($conn) {
 
 $hasRecurringStopDateColumn = ensureRecurringStopDateColumn($savienojums);
 
+// Combined transaction submit
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_transaction'])) {
+    $date = $_POST['transaction_date'];
+    $amount = floatval($_POST['transaction_amount']);
+    $description = trim($_POST['transaction_description']);
+    $type = (isset($_POST['transaction_type']) && $_POST['transaction_type'] === 'expense') ? 'expense' : 'income';
+    $is_recurring = isset($_POST['is_recurring_transaction']) ? 1 : 0;
+
+    if (!empty($date) && $amount > 0) {
+        $stmt = mysqli_prepare($savienojums, "INSERT INTO BU_transactions (user_id, date, amount, type, description, is_recurring) VALUES (?, ?, ?, ?, ?, ?)");
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "isdssi", $user_id, $date, $amount, $type, $description, $is_recurring);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+
+            if (is_ajax_request()) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true]);
+                exit();
+            }
+
+            header('Location: calendar.php');
+            exit();
+        }
+    }
+}
+
 //Income submit
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_income'])) {
     $date = $_POST['income_date'];
@@ -373,14 +400,6 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
             <div class="dashboard-header">
                 <h1 class="dashboard-title">Finanšu Kalendārs</h1>
                 <div class="header-buttons">
-                    <button class="btn btn-success" onclick="openIncomeModal()">
-                        <span><i class="fa-solid fa-plus"></i></span>
-                        Pievienot ienākumu
-                    </button>
-                    <button class="btn btn-danger" onclick="openExpenseModal()">
-                        <span><i class="fa-solid fa-minus"></i></span>
-                        Pievienot izdevumu
-                    </button>
                 </div>
             </div>
 
@@ -487,89 +506,53 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
         </main>
     </div>
 
-    <!-- Income Modal -->
-    <div id="incomeModal" class="modal">
+    <!-- Transaction Modal -->
+    <div id="transactionModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">Pievienot ienākumu</h2>
-                <button class="modal-close" onclick="closeIncomeModal()">✕</button>
+                <h2 class="modal-title" id="transactionModalTitle">Pievienot ienākumu</h2>
+                <button class="modal-close" onclick="closeTransactionModal()">✕</button>
             </div>
-            <form method="POST" action="" class="modal-form">
-                <input type="hidden" name="add_income" value="1">
-                
+            <form method="POST" action="" class="modal-form" id="transactionForm">
+                <input type="hidden" name="add_transaction" value="1">
+
+                <div class="transaction-type-toggle">
+                    <button type="button" id="toggleIncome" class="type-toggle-btn active" onclick="setTransactionType('income')">
+                        <i class="fa-solid fa-plus"></i> Ienākums
+                    </button>
+                    <button type="button" id="toggleExpense" class="type-toggle-btn" onclick="setTransactionType('expense')">
+                        <i class="fa-solid fa-minus"></i> Izdevums
+                    </button>
+                </div>
+                <input type="hidden" name="transaction_type" id="transaction_type" value="income">
+
                 <div class="form-group">
-                    <label for="income_date" class="form-label">Datums</label>
-                    <input type="date" id="income_date" name="income_date"
+                    <label for="transaction_date" class="form-label">Datums</label>
+                    <input type="date" id="transaction_date" name="transaction_date"
                         class="form-input" required value="<?php echo date('Y-m-d'); ?>">
                 </div>
 
                 <div class="form-group">
-                    <label for="income_amount" class="form-label">Summa (<?php echo $currSymbol; ?>)</label>
-                    <input type="number" id="income_amount" name="income_amount"
+                    <label for="transaction_amount" class="form-label">Summa (<?php echo $currSymbol; ?>)</label>
+                    <input type="number" id="transaction_amount" name="transaction_amount"
                         class="form-input" placeholder="0.00" step="0.01" min="0.01" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="income_description" class="form-label">Apraksts</label>
-                    <input type="text" id="income_description" name="income_description"
-                        class="form-input" placeholder="Piemēram: Alga, Prēmija..." required>
+                    <label for="transaction_description" class="form-label">Apraksts</label>
+                    <input type="text" id="transaction_description" name="transaction_description"
+                        class="form-input" placeholder="Apraksts..." required>
                 </div>
 
                 <div class="form-group">
                     <label class="checkbox-label">
-                        <input type="checkbox" name="is_recurring" class="checkbox-input">
-                        <span>Ikmēneša ienākums (atkārtosies katru mēnesi)</span>
+                        <input type="checkbox" name="is_recurring_transaction" class="checkbox-input">
+                        <span id="recurringLabel">Ikmēneša ienākums (atkārtosies katru mēnesi)</span>
                     </label>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-full">
+                <button type="submit" class="btn btn-success btn-full" id="transactionSubmitBtn">
                     Pievienot ienākumu
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Expense Modal -->
-    <div id="expenseModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">Pievienot izdevumu</h2>
-                <button class="modal-close" onclick="closeExpenseModal()">✕</button>
-            </div>
-            <form method="POST" action="" class="modal-form">
-                <input type="hidden" name="add_expense" value="1">
-                
-                <div class="form-group">
-                    <label for="expense_date" class="form-label">Datums</label>
-                    <input type="date" id="expense_date" name="expense_date"
-                        class="form-input" required value="<?php echo date('Y-m-d'); ?>">
-                </div>
-
-                <div class="form-group">
-                    <label for="expense_amount" class="form-label">Summa (<?php echo $currSymbol; ?>)</label>
-                    <div class="amount-input-wrapper">
-                        <span class="amount-prefix">-</span>
-                        <input type="number" id="expense_amount" name="expense_amount"
-                            class="form-input amount-input" placeholder="0.00"
-                            step="0.01" min="0.01" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="expense_description" class="form-label">Apraksts</label>
-                    <input type="text" id="expense_description" name="expense_description"
-                        class="form-input" placeholder="Piemēram: Īre, Elektrība, Pārtika..." required>
-                </div>
-
-                <div class="form-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="is_recurring_expense" class="checkbox-input">
-                        <span>Ikmēneša izdevums (atkārtosies katru mēnesi)</span>
-                    </label>
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-full">
-                    Pievienot izdevumu
                 </button>
             </form>
         </div>

@@ -2,32 +2,52 @@
 const monthNames = ['', 'Janvāris', 'Februāris', 'Marts', 'Aprīlis', 'Maijs', 'Jūnijs',
                     'Jūlijs', 'Augusts', 'Septembris', 'Oktobris', 'Novembris', 'Decembris'];
 
-// open income modal
-function openIncomeModal() {
-    const modal = document.getElementById('incomeModal');
+function openTransactionModal(date = null, type = 'income') {
+    const modal = document.getElementById('transactionModal');
+    const dateInput = document.getElementById('transaction_date');
+    const amountInput = document.getElementById('transaction_amount');
+    const descInput = document.getElementById('transaction_description');
+    const recurringCheck = modal.querySelector('input[name="is_recurring_transaction"]');
+
+    dateInput.value = date || new Date().toISOString().split('T')[0];
+    amountInput.value = '';
+    descInput.value = '';
+    if (recurringCheck) recurringCheck.checked = false;
+
+    setTransactionType(type);
     modal.classList.add('modal-open');
     document.body.style.overflow = 'hidden';
 }
 
-// close income modal
-function closeIncomeModal() {
-    const modal = document.getElementById('incomeModal');
+function closeTransactionModal() {
+    const modal = document.getElementById('transactionModal');
     modal.classList.remove('modal-open');
     document.body.style.overflow = 'auto';
 }
 
-// open expense modal
-function openExpenseModal() {
-    const modal = document.getElementById('expenseModal');
-    modal.classList.add('modal-open');
-    document.body.style.overflow = 'hidden';
-}
+function setTransactionType(type) {
+    document.getElementById('transaction_type').value = type;
+    const incomeBtn  = document.getElementById('toggleIncome');
+    const expenseBtn = document.getElementById('toggleExpense');
+    const submitBtn  = document.getElementById('transactionSubmitBtn');
+    const recurringLabel = document.getElementById('recurringLabel');
+    const modalTitle = document.getElementById('transactionModalTitle');
 
-// close expense modal
-function closeExpenseModal() {
-    const modal = document.getElementById('expenseModal');
-    modal.classList.remove('modal-open');
-    document.body.style.overflow = 'auto';
+    if (type === 'income') {
+        incomeBtn.classList.add('active');
+        expenseBtn.classList.remove('active');
+        submitBtn.textContent = 'Pievienot ienākumu';
+        submitBtn.className = 'btn btn-success btn-full';
+        recurringLabel.textContent = 'Ikmēneša ienākums (atkārtosies katru mēnesi)';
+        modalTitle.textContent = 'Pievienot ienākumu';
+    } else {
+        expenseBtn.classList.add('active');
+        incomeBtn.classList.remove('active');
+        submitBtn.textContent = 'Pievienot izdevumu';
+        submitBtn.className = 'btn btn-danger btn-full';
+        recurringLabel.textContent = 'Ikmēneša izdevums (atkārtosies katru mēnesi)';
+        modalTitle.textContent = 'Pievienot izdevumu';
+    }
 }
 
 // open day details
@@ -77,6 +97,14 @@ function openDayModal(day, month, year) {
         });
     }
     
+    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    html += `
+        <div class="day-modal-add-btn">
+            <button type="button" class="btn btn-primary" onclick="openTransactionModal('${dateStr}')">
+                <i class="fa-solid fa-plus"></i> Pievienot ierakstu
+            </button>
+        </div>
+    `;
     content.innerHTML = html;
     modal.classList.add('modal-open');
     document.body.style.overflow = 'hidden';
@@ -385,7 +413,7 @@ function handleTransactionFormSubmit(e) {
     const form = e.target;
     if (!(form instanceof HTMLFormElement)) return;
     if (form.dataset.skipAjax === '1') return;
-    if (form.querySelector('input[name="add_income"], input[name="add_expense"]')) {
+    if (form.querySelector('input[name="add_income"], input[name="add_expense"], input[name="add_transaction"]')) {
         e.preventDefault();
         const formData = new FormData(form);
         formData.append('ajax', 1);
@@ -402,9 +430,11 @@ function handleTransactionFormSubmit(e) {
         })
         .then(data => {
             if (data.success) {
-                closeIncomeModal();
-                closeExpenseModal();
-                loadCalendarMonth(currentMonth, currentYear, false);
+                closeTransactionModal();
+                const savedDay = window._dayModalOpenDay;
+                loadCalendarMonth(currentMonth, currentYear, false, function() {
+                    if (savedDay) openDayModal(savedDay, currentMonth, currentYear);
+                });
             } else {
                 form.dataset.skipAjax = '1';
                 form.submit();
@@ -434,8 +464,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
 // close modal if click outside
 window.addEventListener('click', function(e) {
-    if (e.target === document.getElementById('incomeModal'))  closeIncomeModal();
-    if (e.target === document.getElementById('expenseModal')) closeExpenseModal();
+    if (e.target === document.getElementById('transactionModal')) closeTransactionModal();
     if (e.target === document.getElementById('dayModal'))     closeDayModal();
     const wm = document.getElementById('warningModal');
     if (wm && e.target === wm) closeWarningModal();
@@ -448,8 +477,7 @@ window.addEventListener('click', function(e) {
 // close modal with esc
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        closeIncomeModal();
-        closeExpenseModal();
+        closeTransactionModal();
         closeDayModal();
         closeWarningModal();
         closeBudgetWarningModal();
@@ -461,14 +489,17 @@ document.addEventListener('keydown', function(e) {
 // ─── Expense form validation ──────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', function() {
-    const expenseForm = document.querySelector('#expenseModal form');
-    
-    if (expenseForm) {
-        expenseForm.addEventListener('submit', function(e) {
-            const expenseAmount = parseFloat(document.getElementById('expense_amount').value) || 0;
-            const expenseDate   = document.getElementById('expense_date').value; // 'YYYY-MM-DD'
+    const transactionForm = document.getElementById('transactionForm');
 
-            // 1. Check monthly income exceed (existing behaviour)
+    if (transactionForm) {
+        transactionForm.addEventListener('submit', function(e) {
+            const typeField = document.getElementById('transaction_type');
+            if (!typeField || typeField.value !== 'expense') return;
+
+            const expenseAmount = parseFloat(document.getElementById('transaction_amount').value) || 0;
+            const expenseDate   = document.getElementById('transaction_date').value;
+
+            // 1. Check monthly income exceed
             const newTotalExpense = monthlyExpense + expenseAmount;
             if (newTotalExpense > monthlyIncome) {
                 e.preventDefault();
@@ -595,10 +626,10 @@ function closeBudgetWarningModal() {
 
 function confirmBudgetExpense() {
     closeBudgetWarningModal();
-    const expenseForm = document.querySelector('#expenseModal form');
-    if (expenseForm) {
-        const newForm = expenseForm.cloneNode(true);
-        expenseForm.parentNode.replaceChild(newForm, expenseForm);
+    const form = document.getElementById('transactionForm');
+    if (form) {
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
         newForm.submit();
     }
 }
@@ -682,10 +713,10 @@ function closeWarningModal() {
 
 function confirmExpense() {
     closeWarningModal();
-    const expenseForm = document.querySelector('#expenseModal form');
-    if (expenseForm) {
-        const newForm = expenseForm.cloneNode(true);
-        expenseForm.parentNode.replaceChild(newForm, expenseForm);
+    const form = document.getElementById('transactionForm');
+    if (form) {
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
         newForm.submit();
     }
 }
