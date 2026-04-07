@@ -1,6 +1,8 @@
 // Month names used across calendar rendering and day modal titles
-const monthNames = ['', 'Janvāris', 'Februāris', 'Marts', 'Aprīlis', 'Maijs', 'Jūnijs',
-                    'Jūlijs', 'Augusts', 'Septembris', 'Oktobris', 'Novembris', 'Decembris'];
+const monthNames = (typeof calendarStrings !== 'undefined' && calendarStrings.monthNames)
+    ? calendarStrings.monthNames
+    : ['', 'Janvāris', 'Februāris', 'Marts', 'Aprīlis', 'Maijs', 'Jūnijs',
+       'Jūlijs', 'Augusts', 'Septembris', 'Oktobris', 'Novembris', 'Decembris'];
 
 function openTransactionModal(date = null, type = 'income') {
     const modal = document.getElementById('transactionModal');
@@ -36,17 +38,17 @@ function setTransactionType(type) {
     if (type === 'income') {
         incomeBtn.classList.add('active');
         expenseBtn.classList.remove('active');
-        submitBtn.textContent = 'Pievienot ienākumu';
+        submitBtn.textContent = calendarStrings.addIncome;
         submitBtn.className = 'btn btn-success btn-full';
-        recurringLabel.textContent = 'Ikmēneša ienākums (atkārtosies katru mēnesi)';
-        modalTitle.textContent = 'Pievienot ienākumu';
+        recurringLabel.textContent = calendarStrings.recurIncome;
+        modalTitle.textContent = calendarStrings.addIncome;
     } else {
         expenseBtn.classList.add('active');
         incomeBtn.classList.remove('active');
-        submitBtn.textContent = 'Pievienot izdevumu';
+        submitBtn.textContent = calendarStrings.addExpense;
         submitBtn.className = 'btn btn-danger btn-full';
-        recurringLabel.textContent = 'Ikmēneša izdevums (atkārtosies katru mēnesi)';
-        modalTitle.textContent = 'Pievienot izdevumu';
+        recurringLabel.textContent = calendarStrings.recurExpense;
+        modalTitle.textContent = calendarStrings.addExpense;
     }
 }
 
@@ -55,8 +57,10 @@ function openDayModal(day, month, year) {
     const modal   = document.getElementById('dayModal');
     const title   = document.getElementById('dayModalTitle');
     const content = document.getElementById('dayModalContent');
-    const monthNames = ['', 'Janvāris', 'Februāris', 'Marts', 'Aprīlis', 'Maijs', 'Jūnijs', 
-                        'Jūlijs', 'Augusts', 'Septembris', 'Oktobris', 'Novembris', 'Decembris'];
+    const monthNames = (typeof calendarStrings !== 'undefined' && calendarStrings.monthNames)
+        ? calendarStrings.monthNames
+        : ['', 'Janvāris', 'Februāris', 'Marts', 'Aprīlis', 'Maijs', 'Jūnijs', 
+           'Jūlijs', 'Augusts', 'Septembris', 'Oktobris', 'Novembris', 'Decembris'];
     title.textContent = `${day}. ${monthNames[month]}, ${year}`;
     window._dayModalOpenDay = day;
     
@@ -64,14 +68,14 @@ function openDayModal(day, month, year) {
     let html = '';
     
     if (transactions.length === 0) {
-        html = '<div class="no-transactions">Nav ierakstu šajā dienā.</div>';
+        html = `<div class="no-transactions">${calendarStrings.noEntries}</div>`;
     } else {
         transactions.forEach(transaction => {
             const typeClass = transaction.type === 'income' ? 'income' : 'expense';
-            const typeLabel = transaction.type === 'income' ? 'Ienākums' : 'Izdevums';
+            const typeLabel = transaction.type === 'income' ? calendarStrings.typeIncome : calendarStrings.typeExpense;
             const sign      = transaction.type === 'income' ? '+' : '-';
             const recurringBadge = transaction.is_recurring_display
-                ? '<span class="recurring-badge"><i class="fa-solid fa-rotate"></i> Ikmēneša</span>' : '';
+                ? `<span class="recurring-badge"><i class="fa-solid fa-rotate"></i> ${calendarStrings.badgeMonthly}</span>` : '';
             const recurringInfo = transaction.is_recurring_display
                 ? '<div class="transaction-note"></div>'
                 : '';
@@ -101,7 +105,7 @@ function openDayModal(day, month, year) {
     html += `
         <div class="day-modal-add-btn">
             <button type="button" class="btn btn-primary" onclick="openTransactionModal('${dateStr}')">
-                <i class="fa-solid fa-plus"></i> Pievienot ierakstu
+                <i class="fa-solid fa-plus"></i> ${calendarStrings.addEntry}
             </button>
         </div>
     `;
@@ -143,16 +147,16 @@ function showDeleteConfirm(onConfirm) {
     modal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">Apstiprināt dzēšanu</h2>
+                <h2 class="modal-title">${calendarStrings.deleteTitle}</h2>
                 <button type="button" class="modal-close" aria-label="Aizvērt">✕</button>
             </div>
             <div class="modal-body">
-                <p>Vai tiešām vēlies dzēst šo ierakstu? Šī darbība nevar tikt atsaukta.</p>
+                <p>${calendarStrings.deleteMessage}</p>
             </div>
             <div class="modal-actions">
-                <button type="button" class="btn btn-secondary" id="deleteCancelBtn">Atcelt</button>
+                <button type="button" class="btn btn-secondary" id="deleteCancelBtn">${calendarStrings.deleteCancel}</button>
                 <button type="button" class="btn btn-danger" id="deleteConfirmBtn">
-                    <i class="fa-solid fa-trash"></i> Dzēst
+                    <i class="fa-solid fa-trash"></i> ${calendarStrings.deleteBtn}
                 </button>
             </div>
         </div>`;
@@ -554,19 +558,19 @@ function showBudgetWarningModal(expenseAmount, expenseDate, breachedBudgets) {
                 </div>
                 <div class="bw-budget-stats">
                     <div class="bw-stat">
-                        <span class="bw-stat-label">Budžets</span>
+                        <span class="bw-stat-label">${calendarStrings.bwBudget}</span>
                         <span class="bw-stat-val">€${parseFloat(b.budget_amount).toFixed(2)}</span>
                     </div>
                     <div class="bw-stat">
-                        <span class="bw-stat-label">Tērēts</span>
+                        <span class="bw-stat-label">${calendarStrings.bwSpent}</span>
                         <span class="bw-stat-val expense">€${parseFloat(b.spent).toFixed(2)}</span>
                     </div>
                     <div class="bw-stat">
-                        <span class="bw-stat-label">Jauns izdevums</span>
+                        <span class="bw-stat-label">${calendarStrings.bwNewExpense}</span>
                         <span class="bw-stat-val expense">€${expenseAmount.toFixed(2)}</span>
                     </div>
                     <div class="bw-stat bw-stat-over">
-                        <span class="bw-stat-label">Pārtērēts par</span>
+                        <span class="bw-stat-label">${calendarStrings.bwOver}</span>
                         <span class="bw-stat-val deficit">€${over.toFixed(2)}</span>
                     </div>
                 </div>
@@ -580,7 +584,7 @@ function showBudgetWarningModal(expenseAmount, expenseDate, breachedBudgets) {
             </div>`;
     });
 
-    const plural = breachedBudgets.length > 1 ? 'budžetiem' : 'budžetam';
+    const plural = breachedBudgets.length > 1 ? calendarStrings.bwSubPlural : calendarStrings.bwSubSingle;
 
     const modal = document.createElement('div');
     modal.id = 'budgetWarningModal';
@@ -591,22 +595,22 @@ function showBudgetWarningModal(expenseAmount, expenseDate, breachedBudgets) {
                 <div class="bw-title-wrap">
                     <div class="bw-title-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
                     <div>
-                        <h2 class="modal-title bw-modal-title">Budžeta brīdinājums</h2>
-                        <p class="bw-subtitle">Šis izdevums pārsniegs ${plural}</p>
+                        <h2 class="modal-title bw-modal-title">${calendarStrings.bwTitle}</h2>
+                        <p class="bw-subtitle">${(calendarStrings.bwSubtitleFmt || '%s').replace('%s', plural)}</p>
                     </div>
                 </div>
                 <button class="modal-close" onclick="closeBudgetWarningModal()">✕</button>
             </div>
             <div class="bw-body">
                 ${budgetRows}
-                <p class="bw-question">Vai tiešām vēlies pievienot šo izdevumu?</p>
+                <p class="bw-question">${calendarStrings.bwQuestion}</p>
             </div>
             <div class="bw-actions">
                 <button class="btn btn-secondary" onclick="closeBudgetWarningModal()">
-                    <i class="fa-solid fa-xmark"></i> Atcelt
+                    <i class="fa-solid fa-xmark"></i> ${calendarStrings.bwCancel}
                 </button>
                 <button class="btn btn-danger" onclick="confirmBudgetExpense()">
-                    <i class="fa-solid fa-check"></i> Jā, pievienot
+                    <i class="fa-solid fa-check"></i> ${calendarStrings.bwConfirm}
                 </button>
             </div>
         </div>`;
@@ -655,38 +659,38 @@ function showWarningModal(expenseAmount, newTotalExpense) {
         warningModal.innerHTML = `
             <div class="modal-content warning-modal-content">
                 <div class="modal-header">
-                    <h2 class="modal-title warning-title">⚠️ Brīdinājums!</h2>
+                    <h2 class="modal-title warning-title">${calendarStrings.warnTitle}</h2>
                 </div>
                 <div class="warning-message">
-                    <p class="warning-text">Šis izdevums pārsniegs tavus mēneša ienākumus!</p>
+                    <p class="warning-text">${calendarStrings.warnText}</p>
                     <div class="warning-details">
                         <div class="warning-stat">
-                            <span class="warning-label">Mēneša ienākumi:</span>
+                            <span class="warning-label">${calendarStrings.warnMonthIncome}</span>
                             <span class="warning-value income">+€${monthlyIncome.toFixed(2)}</span>
                         </div>
                         <div class="warning-stat">
-                            <span class="warning-label">Pašreizējie izdevumi:</span>
+                            <span class="warning-label">${calendarStrings.warnCurExpense}</span>
                             <span class="warning-value expense">-€${monthlyExpense.toFixed(2)}</span>
                         </div>
                         <div class="warning-stat">
-                            <span class="warning-label">Jauns izdevums:</span>
+                            <span class="warning-label">${calendarStrings.warnNewExpense}</span>
                             <span class="warning-value expense">-€${expenseAmount.toFixed(2)}</span>
                         </div>
                         <div class="warning-divider"></div>
                         <div class="warning-stat total">
-                            <span class="warning-label">Kopējie izdevumi:</span>
+                            <span class="warning-label">${calendarStrings.warnTotal}</span>
                             <span class="warning-value expense">-€${newTotalExpense.toFixed(2)}</span>
                         </div>
                         <div class="warning-stat deficit">
-                            <span class="warning-label">Deficīts:</span>
+                            <span class="warning-label">${calendarStrings.warnDeficit}</span>
                             <span class="warning-value deficit-value">-€${deficit.toFixed(2)}</span>
                         </div>
                     </div>
-                    <p class="warning-question">Vai tiešām vēlies pievienot šo izdevumu?</p>
+                    <p class="warning-question">${calendarStrings.warnQuestion}</p>
                 </div>
                 <div class="warning-actions">
-                    <button class="btn btn-secondary" onclick="closeWarningModal()">Atcelt</button>
-                    <button class="btn btn-danger" onclick="confirmExpense()">Jā, pievienot</button>
+                    <button class="btn btn-secondary" onclick="closeWarningModal()">${calendarStrings.warnCancel}</button>
+                    <button class="btn btn-danger" onclick="confirmExpense()">${calendarStrings.warnConfirm}</button>
                 </div>
             </div>
         `;

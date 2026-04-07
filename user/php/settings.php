@@ -328,6 +328,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings']) && !
         $success = false;
     }
 
+    // Save language
+    $allowed_languages = ['lv', 'en'];
+    $language = isset($_POST['language']) && in_array($_POST['language'], $allowed_languages) ? $_POST['language'] : 'lv';
+    $stmt = mysqli_prepare($savienojums,
+        "INSERT INTO BU_user_settings (user_id, setting_key, setting_value)
+         VALUES (?, 'language', ?)
+         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "is", $user_id, $language);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        $_SESSION['language'] = $language;
+    } else {
+        $success = false;
+    }
+
     if ($success) {
         $success_message = 'Iestatījumi saglabāti veiksmīgi!';
     } elseif ($error_message === '') {
@@ -338,10 +354,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings']) && !
 // ── Load current settings ─────────────────────────────────────────────────────
 $current_theme = $_SESSION['theme'] ?? 'dark';
 $current_currency = $_SESSION['currency'] ?? 'EUR';
+$current_language = $_SESSION['language'] ?? 'lv';
 
 // Try to pull from DB (in case session is stale)
 $stmt = mysqli_prepare($savienojums,
-    "SELECT setting_key, setting_value FROM BU_user_settings WHERE user_id = ? AND setting_key IN ('theme', 'currency')");
+    "SELECT setting_key, setting_value FROM BU_user_settings WHERE user_id = ? AND setting_key IN ('theme', 'currency', 'language')");
 if ($stmt) {
     mysqli_stmt_bind_param($stmt, "i", $user_id);
     mysqli_stmt_execute($stmt);
@@ -353,10 +370,14 @@ if ($stmt) {
         } elseif ($row['setting_key'] === 'currency') {
             $current_currency = $row['setting_value'];
             $_SESSION['currency'] = $current_currency;
+        } elseif ($row['setting_key'] === 'language') {
+            $current_language = $row['setting_value'];
+            $_SESSION['language'] = $current_language;
         }
     }
     mysqli_stmt_close($stmt);
 }
+$_traw_settings = json_decode(file_get_contents(__DIR__ . '/translate.json'), true) ?? [];
 
 // Load current email from database
 $stmt = mysqli_prepare($savienojums, "SELECT email FROM BU_users WHERE id = ?");
@@ -380,6 +401,7 @@ if ($stmt) {
     <link rel="stylesheet" href="../css/settings.css">
     <link rel="icon" href="../../assets/image/logo.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css">
 </head>
 <body class="<?php echo $current_theme === 'light' ? 'light-mode' : ''; ?>">
     <div class="dashboard-container">
@@ -387,7 +409,7 @@ if ($stmt) {
 
         <main class="dashboard-main">
             <div class="dashboard-header">
-                <h1 class="dashboard-title">Iestatījumi</h1>
+                <h1 class="dashboard-title" data-i18n="page.title">Iestatiājumi</h1>
             </div>
 
             <?php if ($success_message): ?>
@@ -410,8 +432,8 @@ if ($stmt) {
                         <i class="fa-solid fa-palette"></i>
                     </div>
                     <div>
-                        <h2 class="settings-section-title">Izskats</h2>
-                        <p class="settings-section-subtitle">Pielāgojiet lietotnes vizuālo stilu un valūtu</p>
+                        <h2 class="settings-section-title" data-i18n="appearance.title">Izskats</h2>
+                        <p class="settings-section-subtitle" data-i18n="appearance.subtitle">Pielāgojiet lietotnes vizuālo stilu un valūtu</p>
                     </div>
                 </div>
 
@@ -422,8 +444,8 @@ if ($stmt) {
                         <!-- Theme ──────────────────────────────────────────────────── -->
                         <div class="settings-row">
                             <div class="settings-row-info">
-                                <span class="settings-row-label">Krāsu shēma</span>
-                                <span class="settings-row-desc">Izvēlieties tumšo vai gaišo režīmu</span>
+                                <span class="settings-row-label" data-i18n="theme.label">Krāsu shēma</span>
+                                <span class="settings-row-desc" data-i18n="theme.desc">Izvēlieties tumšo vai gaišo režīmu</span>
                             </div>
                             <div class="theme-toggle-group">
                                 <label class="theme-option <?php echo $current_theme === 'dark' ? 'active' : ''; ?>" id="theme-dark-label">
@@ -437,7 +459,7 @@ if ($stmt) {
                                         </div>
                                     </div>
                                     <span class="theme-label">
-                                        <i class="fa-solid fa-moon"></i> Tumšais
+                                        <i class="fa-solid fa-moon"></i> <span data-i18n="theme.dark">Tumšais</span>
                                     </span>
                                 </label>
 
@@ -452,7 +474,7 @@ if ($stmt) {
                                         </div>
                                     </div>
                                     <span class="theme-label">
-                                        <i class="fa-solid fa-sun"></i> Gaišais
+                                        <i class="fa-solid fa-sun"></i> <span data-i18n="theme.light">Gaišais</span>
                                     </span>
                                 </label>
                             </div>
@@ -463,8 +485,8 @@ if ($stmt) {
                         <!-- Currency ────────────────────────────────────────────────── -->
                         <div class="settings-row">
                             <div class="settings-row-info">
-                                <span class="settings-row-label">Valūta</span>
-                                <span class="settings-row-desc">Izvēlieties valūtu budžeta parādīšanai. Šīs izmaiņas ir tikai kosmētiskas un neietekmēs vērtības.</span>
+                                <span class="settings-row-label" data-i18n="currency.label">Valūta</span>
+                                <span class="settings-row-desc" data-i18n="currency.desc">Izvēlieties valūtu budžeta parādīšanai. Šīs izmaiņas ir tikai kosmētiskas un neietekmēs vērtības.</span>
                             </div>
                             <div class="currency-selector">
                                 <select name="currency" id="currencySelect" class="currency-select" style="display: none;">
@@ -520,6 +542,18 @@ if ($stmt) {
                                 </div>
                             </div>
                         </div>
+                        <div class="settings-divider"></div>
+                        <div class="settings-row">
+                            <div class="settings-row-info">
+                                <span class="settings-row-label" data-i18n="language.label">Valoda</span>
+                                <span class="settings-row-desc" data-i18n="language.desc">Izvēlieties lietotnes valodu</span>
+                            </div>
+                            <div class="lang-toggle-group">
+                                <button type="button" class="lang-btn <?php echo $current_language === 'lv' ? 'active' : ''; ?>" data-lang="lv"><span class="fi fi-lv"></span></button>
+                                <button type="button" class="lang-btn <?php echo $current_language === 'en' ? 'active' : ''; ?>" data-lang="en"><span class="fi fi-us"></span></button>
+                            </div>
+                            <input type="hidden" name="language" id="languageInput" value="<?php echo htmlspecialchars($current_language); ?>">
+                        </div>
                     </div>
 
                     <section class="settings-section">
@@ -528,16 +562,16 @@ if ($stmt) {
                                 <i class="fa-solid fa-user"></i>
                             </div>
                             <div>
-                                <h2 class="settings-section-title">Konts</h2>
-                                <p class="settings-section-subtitle">Mainiet konta lietotājvārdu, kas tiek parādīts visā lietotnē.</p>
+                                <h2 class="settings-section-title" data-i18n="account.title">Konts</h2>
+                                <p class="settings-section-subtitle" data-i18n="account.subtitle">Mainiet konta lietotājvārdu, kas tiek parādīts visā lietotnē.</p>
                             </div>
                         </div>
 
                         <div class="settings-card">
                             <div class="settings-row">
                                 <div class="settings-row-info">
-                                    <span class="settings-row-label">Lietotājvārds</span>
-                                    <span class="settings-row-desc">Lietotājvārds jābūt unikālam un vismaz 4 simbolus garam.</span>
+                                    <span class="settings-row-label" data-i18n="username.label">Lietotājvārds</span>
+                                    <span class="settings-row-desc" data-i18n="username.desc">Lietotājvārds jābūt unikālam un vismāz 4 simbolus garam.</span>
                                 </div>
                                 <div class="settings-row-field">
                                     <input type="text" name="username" id="accountUsername" class="form-input" value="<?php echo htmlspecialchars($username); ?>" required minlength="4" placeholder="Lietotājvārds">
@@ -546,8 +580,8 @@ if ($stmt) {
                             <div class="settings-divider"></div>
                             <div class="settings-row">
                                 <div class="settings-row-info">
-                                    <span class="settings-row-label">E-pasts</span>
-                                    <span class="settings-row-desc">Jūsu konta e-pasta adrese. Tā tiek izmantota pieteikšanās un saziņai.</span>
+                                    <span class="settings-row-label" data-i18n="email.label">E-pasts</span>
+                                    <span class="settings-row-desc" data-i18n="email.desc">Jūsu konta e-pasta adrese. Tā tiek izmantota pieteiķanās un saziņai.</span>
                                 </div>
                                 <div class="settings-row-field">
                                     <input type="email" name="email" id="accountEmail" class="form-input" value="<?php echo htmlspecialchars($current_email); ?>" required placeholder="E-pasts">
@@ -556,8 +590,8 @@ if ($stmt) {
                             <div class="settings-divider"></div>
                             <div class="settings-row">
                                 <div class="settings-row-info">
-                                    <span class="settings-row-label">Pašreizējā parole</span>
-                                    <span class="settings-row-desc">Ievadiet pašreizējo paroli, lai varētu to mainīt.</span>
+                                    <span class="settings-row-label" data-i18n="password.current.label">Pašreizējā parole</span>
+                                    <span class="settings-row-desc" data-i18n="password.current.desc">Ievadiet pašreizējo paroli, lai varētu to mainīt.</span>
                                 </div>
                                 <div class="settings-row-field">
                                     <input type="password" name="password_current" id="passwordCurrent" class="form-input" placeholder="Pašreizējā parole">
@@ -565,8 +599,8 @@ if ($stmt) {
                             </div>
                             <div class="settings-row">
                                 <div class="settings-row-info">
-                                    <span class="settings-row-label">Jaunā parole</span>
-                                    <span class="settings-row-desc">Parolei jābūt vismaz 8 simbolus garai.</span>
+                                    <span class="settings-row-label" data-i18n="password.new.label">Jaunā parole</span>
+                                    <span class="settings-row-desc" data-i18n="password.new.desc">Parolei jābūt vismāz 8 simbolus garai.</span>
                                 </div>
                                 <div class="settings-row-field">
                                     <input type="password" name="password_new" id="passwordNew" class="form-input" placeholder="Jaunā parole">
@@ -574,8 +608,8 @@ if ($stmt) {
                             </div>
                             <div class="settings-row">
                                 <div class="settings-row-info">
-                                    <span class="settings-row-label">Apstipriniet paroli</span>
-                                    <span class="settings-row-desc">Ievadiet jauno paroli vēlreiz, lai apstiprinātu.</span>
+                                    <span class="settings-row-label" data-i18n="password.confirm.label">Apstipriniet paroli</span>
+                                    <span class="settings-row-desc" data-i18n="password.confirm.desc">Ievadiet jauno paroli vēlreiz, lai apstiprinātu.</span>
                                 </div>
                                 <div class="settings-row-field">
                                     <input type="password" name="password_confirm" id="passwordConfirm" class="form-input" placeholder="Apstipriniet paroli">
@@ -584,26 +618,26 @@ if ($stmt) {
                             <div class="settings-divider"></div>
                                     <div class="settings-row">
                                 <div class="settings-row-info">
-                                    <span class="settings-row-label">Atiestatīt kontu</span>
-                                    <span class="settings-row-desc">Notīra visus budžetus, darījumus un iestatījumus, bet saglabā jūsu konta informāciju.</span>
+                                    <span class="settings-row-label" data-i18n="account.reset.label">Atiestatīt kontu</span>
+                                    <span class="settings-row-desc" data-i18n="account.reset.desc">Notīra visus budžetus, darījumus un iestatiājumus, bet saglabā jūsu konta informāciju.</span>
                                 </div>
                                 <div class="settings-row-field">
                                     <button type="button" id="resetAccountBtn" class="btn btn-danger">
                                         <i class="fa-solid fa-rotate-right"></i>
-                                        Atiestatīt kontu
+                                        <span data-i18n="account.reset.btn">Atiestatīt kontu</span>
                                     </button>
                                 </div>
                             </div>
                             <div class="settings-divider"></div>
                             <div class="settings-row">
                                 <div class="settings-row-info">
-                                    <span class="settings-row-label">Dzēst kontu</span>
-                                    <span class="settings-row-desc">Šī darbība ir neatgriezeniska — visi dati tiks dzēsti.</span>
+                                    <span class="settings-row-label" data-i18n="account.delete.label">Dzēst kontu</span>
+                                    <span class="settings-row-desc" data-i18n="account.delete.desc">Šī darbība ir neatgriezenīska — visi dati tiks dzēsti.</span>
                                 </div>
                                 <div class="settings-row-field">
                                     <button type="button" id="deleteAccountBtn" class="btn btn-danger">
                                         <i class="fa-solid fa-trash-can"></i>
-                                        Dzēst kontu
+                                        <span data-i18n="account.delete.btn">Dzēst kontu</span>
                                     </button>
                                 </div>
                             </div>
@@ -613,7 +647,7 @@ if ($stmt) {
                     <div class="settings-actions">
                         <button type="submit" class="btn btn-primary">
                             <i class="fa-solid fa-floppy-disk"></i>
-                            Saglabāt izmaiņas
+                            <span data-i18n="btn.save">Saglabāt izmaiņas</span>
                         </button>
                     </div>
                 </form>
@@ -631,6 +665,8 @@ if ($stmt) {
         }
     </script>
     <script src="../js/script.js"></script>
+    <script>window._i18nData=<?php echo json_encode($_traw_settings); ?>;window._i18nLang=<?php echo json_encode($current_language); ?>;</script>
+    <script src="../js/language.js"></script>
     <script src="../js/settings.js"></script>
 </body>
 </html>

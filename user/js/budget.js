@@ -58,9 +58,11 @@ function showBudgetDeleteConfirm(form, isGroup) {
     let existing = document.getElementById('budgetDeleteConfirmModal');
     if (existing) existing.remove();
 
+    const T = window._i18n ? (window._i18n.T[window._i18n.lang] || window._i18n.T['lv']) : null;
+
     const message = isGroup
-        ? 'Vai tiešām vēlies dzēst visus 4 cetur'+'kšņu budžetus? Šī darbība nevar tikt atsaukta.'
-        : 'Vai tiešām vēlies dzēst šo budžestu? Šī darbība nevar tikt atsaukta.';
+        ? (T && T['budget.delete.confirm.group']  ? T['budget.delete.confirm.group']  : 'Vai tiešām vēlies dzēst visus 4 cetur'+'kšņu budžetus? Šī darbība nevar tikt atsaukta.')
+        : (T && T['budget.delete.confirm.single'] ? T['budget.delete.confirm.single'] : 'Vai tiešām vēlies dzēst šo budžestu? Šī darbība nevar tikt atsaukta.');
 
     const modal = document.createElement('div');
     modal.id = 'budgetDeleteConfirmModal';
@@ -68,16 +70,16 @@ function showBudgetDeleteConfirm(form, isGroup) {
     modal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">Apstiprīnāt dzēšanu</h2>
+                <h2 class="modal-title">${T && T['budget.delete.confirm.title'] ? T['budget.delete.confirm.title'] : 'Apstiprīnāt dzēšanu'}</h2>
                 <button type="button" class="modal-close" aria-label="Aizvērt">✕</button>
             </div>
             <div class="modal-body">
                 <p>${message}</p>
             </div>
             <div class="modal-actions">
-                <button type="button" class="btn btn-secondary" id="budgetDeleteCancelBtn">Atcelt</button>
+                <button type="button" class="btn btn-secondary" id="budgetDeleteCancelBtn">${T && T['budget.delete.cancel'] ? T['budget.delete.cancel'] : 'Atcelt'}</button>
                 <button type="button" class="btn btn-danger" id="budgetDeleteConfirmBtn">
-                    <i class="fa-solid fa-trash"></i> Dzēst
+                    <i class="fa-solid fa-trash"></i> ${T && T['budget.delete.btn'] ? T['budget.delete.btn'] : 'Dzēst'}
                 </button>
             </div>
         </div>`;

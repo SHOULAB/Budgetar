@@ -321,3 +321,33 @@
         });
     }
 })();
+
+// ── Language selector ─────────────────────────────────────────────────────────────
+(function () {
+    'use strict';
+
+    const LS_KEY = 'budgetiva_language';
+    const langInput = document.getElementById('languageInput');
+    const saved = localStorage.getItem(LS_KEY) || (langInput ? langInput.value : 'lv') || 'lv';
+    if (langInput) langInput.value = saved;
+
+    // Button clicks — re-apply translations via language.js shared loader
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.lang-btn');
+        if (!btn) return;
+        const lang = btn.dataset.lang;
+        if (langInput) langInput.value = lang;
+        if (window._i18n) {
+            window._i18n.lang = lang;
+            window._i18n.apply(window._i18n.T, lang);
+        }
+    });
+
+    // Persist to localStorage on save
+    const form = document.getElementById('settingsForm');
+    if (form) {
+        form.addEventListener('submit', function () {
+            if (langInput) localStorage.setItem(LS_KEY, langInput.value);
+        });
+    }
+})();

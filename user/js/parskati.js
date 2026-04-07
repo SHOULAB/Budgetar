@@ -48,14 +48,14 @@ new Chart(document.getElementById('barChart'), {
         labels,
         datasets: [
             {
-                label: 'Ienākumi',
+                label: chartLabels.income,
                 data: income,
                 backgroundColor: 'rgba(16,185,129,0.8)',
                 borderRadius: 6,
                 borderSkipped: false,
             },
             {
-                label: 'Izdevumi',
+                label: chartLabels.expense,
                 data: expense,
                 backgroundColor: 'rgba(239,68,68,0.8)',
                 borderRadius: 6,
@@ -76,7 +76,7 @@ new Chart(document.getElementById('lineChart'), {
     data: {
         labels,
         datasets: [{
-            label: 'Bilance',
+            label: chartLabels.balance,
             data: trend,
             borderColor: '#8b5cf6',
             backgroundColor: 'rgba(139,92,246,0.15)',
@@ -100,7 +100,7 @@ new Chart(document.getElementById('savingsChart'), {
     data: {
         labels,
         datasets: [{
-            label: 'Uzkrājums',
+            label: chartLabels.savings,
             data: savings,
             backgroundColor: savings.map(v => v >= 0 ? 'rgba(16,185,129,0.8)' : 'rgba(239,68,68,0.8)'),
             borderRadius: 6,
@@ -125,7 +125,7 @@ new Chart(document.getElementById('savingsChart'), {
 new Chart(document.getElementById('donutChart'), {
     type: 'doughnut',
     data: {
-        labels: ['Ikmēneša ienākumi', 'Vienreizēji ienākumi', 'Ikmēneša izdevumi', 'Vienreizēji izdevumi'],
+        labels: chartLabels.donutLabels,
         datasets: [{
             data: [
                 recurringData.recurring_income,
@@ -159,7 +159,7 @@ new Chart(document.getElementById('areaChart'), {
         labels,
         datasets: [
             {
-                label: 'Ienākumi',
+                label: chartLabels.income,
                 data: income,
                 borderColor: '#10b981',
                 backgroundColor: 'rgba(16,185,129,0.15)',
@@ -170,7 +170,7 @@ new Chart(document.getElementById('areaChart'), {
                 tension: 0.4
             },
             {
-                label: 'Izdevumi',
+                label: chartLabels.expense,
                 data: expense,
                 borderColor: '#ef4444',
                 backgroundColor: 'rgba(239,68,68,0.12)',

@@ -44,6 +44,40 @@ $currencySymbols = [
 ];
 $currSymbol = $currencySymbols[$_SESSION['currency']] ?? '<i class="fa-solid fa-euro-sign"></i>';
 
+// ── Load language + translations ──────────────────────────────────────────────
+$_SESSION['language'] = $_SESSION['language'] ?? 'lv';
+$stmt_lang = mysqli_prepare($savienojums,
+    "SELECT setting_value FROM BU_user_settings WHERE user_id = ? AND setting_key = 'language'");
+if ($stmt_lang) {
+    mysqli_stmt_bind_param($stmt_lang, "i", $user_id);
+    mysqli_stmt_execute($stmt_lang);
+    $res_lang = mysqli_stmt_get_result($stmt_lang);
+    if ($row_lang = mysqli_fetch_assoc($res_lang)) {
+        $_SESSION['language'] = $row_lang['setting_value'];
+    }
+    mysqli_stmt_close($stmt_lang);
+}
+$_lang = $_SESSION['language'];
+$_traw = json_decode(file_get_contents(__DIR__ . '/translate.json'), true) ?? [];
+$_t    = $_traw[$_lang] ?? $_traw['lv'] ?? [];
+
+// Month names for PHP rendering and AJAX response
+$month_names_php = [
+    '', 
+    $_t['cal.month.jan'] ?? 'Janvāris',
+    $_t['cal.month.feb'] ?? 'Februāris',
+    $_t['cal.month.mar'] ?? 'Marts',
+    $_t['cal.month.apr'] ?? 'Aprīlis',
+    $_t['cal.month.may'] ?? 'Maijs',
+    $_t['cal.month.jun'] ?? 'Jūnijs',
+    $_t['cal.month.jul'] ?? 'Jūlijs',
+    $_t['cal.month.aug'] ?? 'Augusts',
+    $_t['cal.month.sep'] ?? 'Septembris',
+    $_t['cal.month.oct'] ?? 'Oktobris',
+    $_t['cal.month.nov'] ?? 'Novembris',
+    $_t['cal.month.dec'] ?? 'Decembris',
+];
+
 function ensureRecurringStopDateColumn($conn) {
     $result = mysqli_query($conn, "SHOW COLUMNS FROM BU_transactions LIKE 'recurring_stop_date'");
     if ($result && mysqli_num_rows($result) > 0) {
@@ -349,16 +383,12 @@ if ($next_month > 12) {
 }
 
 if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
-    $month_names = ['', 'Janvāris', 'Februāris', 'Marts', 'Aprīlis', 'Maijs',
-                    'Jūnijs', 'Jūlijs', 'Augusts', 'Septembris', 'Oktobris',
-                    'Novembris', 'Decembris'];
-
     header('Content-Type: application/json');
     echo json_encode([
         'success' => true,
         'current_month' => $current_month,
         'current_year'  => $current_year,
-        'month_name'    => $month_names[$current_month],
+        'month_name'    => $month_names_php[$current_month],
         'prev_month'    => $prev_month,
         'prev_year'     => $prev_year,
         'next_month'    => $next_month,
@@ -398,7 +428,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
 
         <main class="dashboard-main">
             <div class="dashboard-header">
-                <h1 class="dashboard-title">Finanšu Kalendārs</h1>
+                <h1 class="dashboard-title" data-i18n="cal.page.title">Finanšu Kalendārs</h1>
                 <div class="header-buttons">
                 </div>
             </div>
@@ -407,7 +437,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                 <div class="stat-card stat-card-today" style="<?php echo $is_current_month ? '' : 'display:none;'; ?>">
                     <div class="stat-card-icon"><i class="fa-solid fa-wallet"></i></div>
                     <div class="stat-card-content">
-                        <div class="stat-card-label">Bilance</div>
+                        <div class="stat-card-label" data-i18n="cal.stat.balance">Bilance</div>
                         <div class="stat-card-value"><?php echo $currSymbol; ?><?php echo number_format($today_balance, 2); ?></div>
                     </div>
                 </div>
@@ -415,21 +445,21 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                 <div class="stat-card stat-card-income">
                     <div class="stat-card-icon"><i class="fa-solid fa-sack-dollar"></i></div>
                     <div class="stat-card-content">
-                        <div class="stat-card-label">Kopējie ienākumi</div>
+                        <div class="stat-card-label" data-i18n="cal.stat.income">Kopējie ienākumi</div>
                         <div class="stat-card-value"><?php echo $currSymbol; ?><?php echo number_format($total_income, 2); ?></div>
                     </div>
                 </div>
                 <div class="stat-card stat-card-expense">
                     <div class="stat-card-icon"><i class="fa-solid fa-sack-xmark"></i></div>
                     <div class="stat-card-content">
-                        <div class="stat-card-label">Kopējie izdevumi</div>
+                        <div class="stat-card-label" data-i18n="cal.stat.expense">Kopējie izdevumi</div>
                         <div class="stat-card-value"><?php echo $currSymbol; ?><?php echo number_format($total_expense, 2); ?></div>
                     </div>
                 </div>
                 <div class="stat-card stat-card-balance">
                     <div class="stat-card-icon"><i class="fa-solid fa-landmark"></i></div>
                     <div class="stat-card-content">
-                        <div class="stat-card-label">Mēneša bilance</div>
+                        <div class="stat-card-label" data-i18n="cal.stat.month.balance">Mēneša bilance</div>
                         <div class="stat-card-value"><?php echo $currSymbol; ?><?php echo number_format($balance, 2); ?></div>
                     </div>
                 </div>
@@ -437,17 +467,15 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
 
             <div class="calendar-container">
                 <div class="calendar-header">
-                    <a href="?month=<?php echo $prev_month; ?>&year=<?php echo $prev_year; ?>" class="calendar-nav" data-month="<?php echo $prev_month; ?>" data-year="<?php echo $prev_year; ?>" data-direction="prev">
+                    <a href="?month=<?php echo $prev_month; ?>&year=<?php echo $prev_year; ?>" class="calendar-nav" data-month="<?php echo $prev_month; ?>" data-year="<?php echo $prev_year; ?>" data-direction="prev" data-i18n="cal.nav.prev">
                         ← Iepriekšējais
                     </a>
                     <h2 class="calendar-month">
                         <?php 
-                        $month_names = ['', 'Janvāris', 'Februāris', 'Marts', 'Aprīlis', 'Maijs', 'Jūnijs', 
-                                        'Jūlijs', 'Augusts', 'Septembris', 'Oktobris', 'Novembris', 'Decembris'];
-                        echo $month_names[$current_month] . ' ' . $current_year;
+                        echo $month_names_php[$current_month] . ' ' . $current_year;
                         ?>
                     </h2>
-                    <a href="?month=<?php echo $next_month; ?>&year=<?php echo $next_year; ?>" class="calendar-nav" data-month="<?php echo $next_month; ?>" data-year="<?php echo $next_year; ?>" data-direction="next">
+                    <a href="?month=<?php echo $next_month; ?>&year=<?php echo $next_year; ?>" class="calendar-nav" data-month="<?php echo $next_month; ?>" data-year="<?php echo $next_year; ?>" data-direction="next" data-i18n="cal.nav.next">
                         Nākamais →
                     </a>
                 </div>
@@ -510,7 +538,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
     <div id="transactionModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="transactionModalTitle">Pievienot ienākumu</h2>
+                <h2 class="modal-title" id="transactionModalTitle" data-i18n="cal.modal.add.income">Pievienot ienākumu</h2>
                 <button class="modal-close" onclick="closeTransactionModal()">✕</button>
             </div>
             <form method="POST" action="" class="modal-form" id="transactionForm">
@@ -518,28 +546,28 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
 
                 <div class="transaction-type-toggle">
                     <button type="button" id="toggleIncome" class="type-toggle-btn active" onclick="setTransactionType('income')">
-                        <i class="fa-solid fa-plus"></i> Ienākums
+                        <i class="fa-solid fa-plus"></i> <span data-i18n="cal.modal.income.btn">Ienākums</span>
                     </button>
                     <button type="button" id="toggleExpense" class="type-toggle-btn" onclick="setTransactionType('expense')">
-                        <i class="fa-solid fa-minus"></i> Izdevums
+                        <i class="fa-solid fa-minus"></i> <span data-i18n="cal.modal.expense.btn">Izdevums</span>
                     </button>
                 </div>
                 <input type="hidden" name="transaction_type" id="transaction_type" value="income">
 
                 <div class="form-group">
-                    <label for="transaction_date" class="form-label">Datums</label>
+                    <label for="transaction_date" class="form-label" data-i18n="cal.modal.date">Datums</label>
                     <input type="date" id="transaction_date" name="transaction_date"
                         class="form-input" required value="<?php echo date('Y-m-d'); ?>">
                 </div>
 
                 <div class="form-group">
-                    <label for="transaction_amount" class="form-label">Summa (<?php echo $currSymbol; ?>)</label>
+                    <label for="transaction_amount" class="form-label"><span data-i18n="cal.modal.amount">Summa</span> (<?php echo $currSymbol; ?>)</label>
                     <input type="number" id="transaction_amount" name="transaction_amount"
                         class="form-input" placeholder="0.00" step="0.01" min="0.01" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="transaction_description" class="form-label">Apraksts</label>
+                    <label for="transaction_description" class="form-label" data-i18n="cal.modal.desc">Apraksts</label>
                     <input type="text" id="transaction_description" name="transaction_description"
                         class="form-input" placeholder="Apraksts..." required>
                 </div>
@@ -547,11 +575,11 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                 <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" name="is_recurring_transaction" class="checkbox-input">
-                        <span id="recurringLabel">Ikmēneša ienākums (atkārtosies katru mēnesi)</span>
+                        <span id="recurringLabel" data-i18n="cal.modal.recurring.income">Ikmēneša ienākums (atkārtosies katru mēnesi)</span>
                     </label>
                 </div>
 
-                <button type="submit" class="btn btn-success btn-full" id="transactionSubmitBtn">
+                <button type="submit" class="btn btn-success btn-full" id="transactionSubmitBtn" data-i18n="cal.modal.add.income">
                     Pievienot ienākumu
                 </button>
             </form>
@@ -562,7 +590,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
     <div id="dayModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="dayModalTitle">Dienas transakcijas</h2>
+                <h2 class="modal-title" id="dayModalTitle" data-i18n="cal.day.modal.title">Dienas transakcijas</h2>
                 <button class="modal-close" onclick="closeDayModal()">✕</button>
             </div>
             <div id="dayModalContent" class="day-transactions-list"></div>
@@ -580,6 +608,43 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
         let currencySymbol   = <?php echo json_encode($currSymbol); ?>;
         // Active budgets with their spent/remaining amounts — used for budget-exceed warning
         let activeBudgets    = <?php echo json_encode($activeBudgets); ?>;
+        const calendarStrings = <?php echo json_encode([
+            'noEntries'       => $_t['cal.day.no.entries']          ?? 'Nav ierakstu šajā dienā.',
+            'addEntry'        => $_t['cal.day.add.btn']             ?? 'Pievienot ierakstu',
+            'typeIncome'      => $_t['cal.type.income']             ?? 'Ienākums',
+            'typeExpense'     => $_t['cal.type.expense']            ?? 'Izdevums',
+            'badgeMonthly'    => $_t['cal.badge.monthly']           ?? 'Ikmēneša',
+            'deleteTitle'     => $_t['cal.delete.title']            ?? 'Apstiprināt dzēšanu',
+            'deleteMessage'   => $_t['cal.delete.message']          ?? 'Vai tiešām vēlies dzēst šo ierakstu? Šī darbība nevar tikt atsaukta.',
+            'deleteCancel'    => $_t['cal.delete.cancel']           ?? 'Atcelt',
+            'deleteBtn'       => $_t['cal.delete.btn']              ?? 'Dzēst',
+            'addIncome'       => $_t['cal.modal.add.income']        ?? 'Pievienot ienākumu',
+            'addExpense'      => $_t['cal.modal.add.expense']       ?? 'Pievienot izdevumu',
+            'recurIncome'     => $_t['cal.modal.recurring.income']  ?? 'Ikmēneša ienākums (atkārtosies katru mēnesi)',
+            'recurExpense'    => $_t['cal.modal.recurring.expense'] ?? 'Ikmēneša izdevums (atkārtosies katru mēnesi)',
+            'warnTitle'       => $_t['cal.warn.title']              ?? '⚠️ Brīdinājums!',
+            'warnText'        => $_t['cal.warn.text']               ?? 'Šis izdevums pārsniegs tavus mēneša ienākumus!',
+            'warnMonthIncome' => $_t['cal.warn.month.income']       ?? 'Mēneša ienākumi:',
+            'warnCurExpense'  => $_t['cal.warn.cur.expense']        ?? 'Pašreizējie izdevumi:',
+            'warnNewExpense'  => $_t['cal.warn.new.expense']        ?? 'Jauns izdevums:',
+            'warnTotal'       => $_t['cal.warn.total.expense']      ?? 'Kopējie izdevumi:',
+            'warnDeficit'     => $_t['cal.warn.deficit']            ?? 'Deficīts:',
+            'warnQuestion'    => $_t['cal.warn.question']           ?? 'Vai tiešām vēlies pievienot šo izdevumu?',
+            'warnCancel'      => $_t['cal.warn.cancel']             ?? 'Atcelt',
+            'warnConfirm'     => $_t['cal.warn.confirm']            ?? 'Jā, pievienot',
+            'bwTitle'         => $_t['cal.bw.title']                ?? 'Budžeta brīdinājums',
+            'bwSubSingle'     => $_t['cal.bw.subtitle.single']      ?? 'budžetam',
+            'bwSubPlural'     => $_t['cal.bw.subtitle.plural']      ?? 'budžetiem',
+            'bwBudget'        => $_t['cal.bw.budget']               ?? 'Budžets',
+            'bwSpent'         => $_t['cal.bw.spent']                ?? 'Tērēts',
+            'bwNewExpense'    => $_t['cal.bw.new.expense']          ?? 'Jauns izdevums',
+            'bwOver'          => $_t['cal.bw.over']                 ?? 'Pārtērēts par',
+            'bwQuestion'      => $_t['cal.bw.question']             ?? 'Vai tiešām vēlies pievienot šo izdevumu?',
+            'bwCancel'        => $_t['cal.bw.cancel']               ?? 'Atcelt',
+            'bwConfirm'       => $_t['cal.bw.confirm']              ?? 'Jā, pievienot',
+            'bwSubtitleFmt'   => $_t['cal.bw.subtitle.fmt']          ?? 'Šis izdevums pārsniegs %s',
+            'monthNames'      => $month_names_php,
+        ]); ?>;
     </script>
     <script src="../js/currency.js"></script>
     <script>
@@ -589,6 +654,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
         }
     </script>
     <script src="../js/script.js"></script>
+    <script>window._i18nData=<?php echo json_encode($_traw); ?>;window._i18nLang=<?php echo json_encode($_lang); ?>;</script>
+    <script src="../js/language.js"></script>
     <script src="../js/calendar.js"></script>
 </body>
 </html>

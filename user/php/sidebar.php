@@ -18,19 +18,19 @@
     <nav class="sidebar-nav">
         <a href="calendar.php" class="nav-item <?php echo ($active_page === 'calendar')  ? 'active' : ''; ?>">
             <span class="nav-icon"><i class="fa-solid fa-calendar"></i></span>
-            <span class="nav-text">Kalendārs</span>
+            <span class="nav-text" data-i18n="nav.calendar">Kalendārs</span>
         </a>
         <a href="parskati.php" class="nav-item <?php echo ($active_page === 'parskati') ? 'active' : ''; ?>">
             <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
-            <span class="nav-text">Pārskati</span>
+            <span class="nav-text" data-i18n="nav.reports">Pārskati</span>
         </a>
         <a href="budget.php" class="nav-item <?php echo ($active_page === 'budget')    ? 'active' : ''; ?>">
             <span class="nav-icon"><i class="fa-solid fa-wallet"></i></span>
-            <span class="nav-text">Budžets</span>
+            <span class="nav-text" data-i18n="nav.budget">Budžets</span>
         </a>
         <a href="settings.php" class="nav-item <?php echo ($active_page === 'settings')  ? 'active' : ''; ?>">
             <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
-            <span class="nav-text">Iestatījumi</span>
+            <span class="nav-text" data-i18n="nav.settings">Iestatījumi</span>
         </a>
     </nav>
 

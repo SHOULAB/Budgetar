@@ -41,6 +41,23 @@ $currencySymbols = [
 ];
 $currSymbol = $currencySymbols[$_SESSION['currency']] ?? '<i class="fa-solid fa-euro-sign"></i>';
 
+// ── Load language + translations ──────────────────────────────────────────────
+$_SESSION['language'] = $_SESSION['language'] ?? 'lv';
+$stmt_lang = mysqli_prepare($savienojums,
+    "SELECT setting_value FROM BU_user_settings WHERE user_id = ? AND setting_key = 'language'");
+if ($stmt_lang) {
+    mysqli_stmt_bind_param($stmt_lang, "i", $user_id);
+    mysqli_stmt_execute($stmt_lang);
+    $res_lang = mysqli_stmt_get_result($stmt_lang);
+    if ($row_lang = mysqli_fetch_assoc($res_lang)) {
+        $_SESSION['language'] = $row_lang['setting_value'];
+    }
+    mysqli_stmt_close($stmt_lang);
+}
+$_lang = $_SESSION['language'];
+$_traw = json_decode(file_get_contents(__DIR__ . '/translate.json'), true) ?? [];
+$_t    = $_traw[$_lang] ?? $_traw['lv'] ?? [];
+
 // Flash messages from Post-Redirect-Get
 $msg_map = [
     'added'   => 'Budžets veiksmīgi pievienots!',
@@ -391,9 +408,9 @@ $total_remaining = $total_budget_amount - $total_spent;
         <!-- Main Content -->
         <main class="dashboard-main">
             <div class="dashboard-header">
-                <h1 class="dashboard-title">Budžetu pārvaldība</h1>
+                <h1 class="dashboard-title" data-i18n="budget.page.title">Budžetu pārvaldība</h1>
                 <button class="btn btn-primary" onclick="openAddModal()">
-                    <i class="fa-solid fa-plus"></i> Pievienot budžetu
+                    <i class="fa-solid fa-plus"></i> <span data-i18n="budget.add.btn">Pievienot budžetu</span>
                 </button>
             </div>
 
@@ -413,28 +430,28 @@ $total_remaining = $total_budget_amount - $total_spent;
                 <div class="stat-card">
                     <div class="stat-card-icon"><i class="fa-solid fa-list-check"></i></div>
                     <div class="stat-card-content">
-                        <div class="stat-card-label">Aktīvie budžeti</div>
+                        <div class="stat-card-label" data-i18n="budget.stat.active">Aktīvie budžeti</div>
                         <div class="stat-card-value"><?php echo $active_budgets; ?></div>
                     </div>
                 </div>
                 <div class="stat-card stat-card-income">
                     <div class="stat-card-icon"><i class="fa-solid fa-money-bill"></i></div>
                     <div class="stat-card-content">
-                        <div class="stat-card-label">Kopējais budžets</div>
+                        <div class="stat-card-label" data-i18n="budget.stat.total">Kopējais budžets</div>
                         <div class="stat-card-value"><?php echo $currSymbol; ?><?php echo number_format($total_budget_amount, 2); ?></div>
                     </div>
                 </div>
                 <div class="stat-card stat-card-expense">
                     <div class="stat-card-icon"><i class="fa-solid fa-credit-card"></i></div>
                     <div class="stat-card-content">
-                        <div class="stat-card-label">Tērēts</div>
+                        <div class="stat-card-label" data-i18n="budget.stat.spent">Tērēts</div>
                         <div class="stat-card-value"><?php echo $currSymbol; ?><?php echo number_format($total_spent, 2); ?></div>
                     </div>
                 </div>
                 <div class="stat-card stat-card-balance">
                     <div class="stat-card-icon"><i class="fa-solid fa-piggy-bank"></i></div>
                     <div class="stat-card-content">
-                        <div class="stat-card-label">Atlikums</div>
+                        <div class="stat-card-label" data-i18n="budget.stat.remaining">Atlikums</div>
                         <div class="stat-card-value"><?php echo $currSymbol; ?><?php echo number_format($total_remaining, 2); ?></div>
                     </div>
                 </div>
@@ -445,12 +462,12 @@ $total_remaining = $total_budget_amount - $total_spent;
                     <div style="font-size:64px; margin-bottom:20px; opacity:0.3;">
                         <i class="fa-solid fa-wallet"></i>
                     </div>
-                    <h3 style="font-size:24px; margin-bottom:12px;">Nav izveidoti budžeti</h3>
-                    <p style="color:var(--text-secondary); margin-bottom:30px;">
+                    <h3 style="font-size:24px; margin-bottom:12px;" data-i18n="budget.empty.title">Nav izveidoti budžeti</h3>
+                    <p style="color:var(--text-secondary); margin-bottom:30px;" data-i18n="budget.empty.desc">
                         Sāc pārvaldīt savus izdevumus, izveidojot savu pirmo budžetu!
                     </p>
                     <button class="btn btn-primary" onclick="openAddModal()">
-                        <i class="fa-solid fa-plus"></i> Izveidot budžetu
+                        <i class="fa-solid fa-plus"></i> <span data-i18n="budget.empty.btn">Izveidot budžetu</span>
                     </button>
                 </div>
             <?php else: ?>
@@ -509,15 +526,15 @@ $total_remaining = $total_budget_amount - $total_spent;
 
                             <div class="budget-amounts">
                                 <div class="budget-amount-row">
-                                    <span class="amount-label">Budžets:</span>
+                                    <span class="amount-label" data-i18n="budget.label.budget">Budžets:</span>
                                     <span class="amount-value"><?php echo $currSymbol; ?><?php echo number_format($budget['budget_amount'], 2); ?></span>
                                 </div>
                                 <div class="budget-amount-row">
-                                    <span class="amount-label">Tērēts:</span>
+                                    <span class="amount-label" data-i18n="budget.label.spent">Tērēts:</span>
                                     <span class="amount-value amount-spent"><?php echo $currSymbol; ?><?php echo number_format($budget['spent'], 2); ?></span>
                                 </div>
                                 <div class="budget-amount-row">
-                                    <span class="amount-label">Atlikums:</span>
+                                    <span class="amount-label" data-i18n="budget.label.remaining">Atlikums:</span>
                                     <span class="amount-value amount-remaining"><?php echo $currSymbol; ?><?php echo number_format($budget['remaining'], 2); ?></span>
                                 </div>
                             </div>
@@ -527,14 +544,14 @@ $total_remaining = $total_budget_amount - $total_spent;
                                      style="width:<?php echo $percentage; ?>%"></div>
                             </div>
                             <div style="text-align:center; color:var(--text-secondary); font-size:12px; margin-top:8px;">
-                                <?php echo number_format($percentage, 1); ?>% izmantots
+                                <?php echo number_format($percentage, 1); ?>% <span data-i18n="budget.label.used">izmantots</span>
                             </div>
 
                             <div class="budget-actions">
                                 <div style="flex:1;">
                                     <button class="btn btn-secondary btn-small" style="width:100%;"
                                             onclick='openEditModal(<?php echo json_encode($budget); ?>)'>
-                                        <i class="fa-solid fa-pencil"></i> Rediģēt
+                                        <i class="fa-solid fa-pencil"></i> <span data-i18n="budget.btn.edit">Rediģēt</span>
                                     </button>
                                 </div>
                                 <form method="POST" style="flex:1;"
@@ -543,7 +560,7 @@ $total_remaining = $total_budget_amount - $total_spent;
                                     <input type="hidden" name="budget_id" value="<?php echo $budget['id']; ?>">
                                     <button type="button" class="btn btn-danger btn-small" style="width:100%;"
                                             onclick="showBudgetDeleteConfirm(this.closest('form'), <?php echo !empty($budget['recurring_group_id']) ? 'true' : 'false'; ?>)">
-                                        <i class="fa-solid fa-trash"></i> Dzēst
+                                        <i class="fa-solid fa-trash"></i> <span data-i18n="budget.btn.delete">Dzēst</span>
                                     </button>
                                 </form>
                             </div>
@@ -559,7 +576,7 @@ $total_remaining = $total_budget_amount - $total_spent;
     <div id="addModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">Pievienot jaunu budžetu</h2>
+                <h2 class="modal-title" data-i18n="budget.add.modal.title">Pievienot jaunu budžetu</h2>
                 <button class="modal-close" onclick="closeAddModal()">✕</button>
             </div>
             <form method="POST" class="modal-form">
@@ -567,13 +584,13 @@ $total_remaining = $total_budget_amount - $total_spent;
                 <input type="hidden" name="budget_period" value="custom">
 
                 <div class="form-group">
-                    <label class="form-label">Budžeta nosaukums *</label>
+                    <label class="form-label" data-i18n="budget.add.name.label">Budžeta nosaukums *</label>
                     <input type="text" name="budget_name" class="form-input"
                            placeholder="piem. Nedēļas nogales budžets" required>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Summa (<?php echo $currSymbol; ?>) *</label>
+                    <label class="form-label"><span data-i18n="budget.add.amount.label">Summa</span> (<?php echo $currSymbol; ?>) *</label>
                     <input type="number" name="budget_amount" class="form-input"
                            step="0.01" min="0" placeholder="100.00" required>
                 </div>
@@ -586,8 +603,8 @@ $total_remaining = $total_budget_amount - $total_spent;
                                 <i class="fa-solid fa-arrows-rotate"></i>
                             </div>
                             <div>
-                                <div class="recurring-toggle-title">Regulārs nedēļas grafiks</div>
-                                <div class="recurring-toggle-sub">Automātiska atsvaidzināšana katru nedēļu atlasītajās dienās</div>
+                                <div class="recurring-toggle-title" data-i18n="budget.add.recurring.title">Regulārs nedēļas grafiks</div>
+                                <div class="recurring-toggle-sub" data-i18n="budget.add.recurring.sub">Automātiska atsvaidzināšana katru nedēļu atlasītajās dienās</div>
                             </div>
                         </div>
                         <label class="custom-toggle">
@@ -618,12 +635,12 @@ $total_remaining = $total_budget_amount - $total_spent;
                 <div class="form-group" id="add_dates_group">
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                         <div>
-                            <label class="form-label">Sākuma datums *</label>
+                            <label class="form-label" data-i18n="budget.add.start.label">Sākuma datums *</label>
                             <input type="date" name="start_date" id="add_start_date"
                                    class="form-input">
                         </div>
                         <div>
-                            <label class="form-label">Beigu datums *</label>
+                            <label class="form-label" data-i18n="budget.add.end.label">Beigu datums *</label>
                             <input type="date" name="end_date" id="add_end_date"
                                    class="form-input">
                         </div>
@@ -631,16 +648,16 @@ $total_remaining = $total_budget_amount - $total_spent;
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Brīdinājuma slieksnis (%) *</label>
+                    <label class="form-label" data-i18n="budget.add.warning.label">Brīdinājuma slieksnis (%) *</label>
                     <input type="number" name="warning_threshold" class="form-input"
                            min="0" max="100" value="80" required>
-                    <small style="color:var(--text-secondary); font-size:12px;">
+                    <small style="color:var(--text-secondary); font-size:12px;" data-i18n="budget.add.warning.hint">
                         Tu saņemsi brīdinājumu, kad tērējumi sasniegs šo procentu
                     </small>
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-full">
-                    Pievienot budžetu
+                    <span data-i18n="budget.add.submit">Pievienot budžetu</span>
                 </button>
             </form>
         </div>
@@ -651,7 +668,7 @@ $total_remaining = $total_budget_amount - $total_spent;
     <div id="editModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">Rediģēt budžetu</h2>
+                <h2 class="modal-title" data-i18n="budget.edit.modal.title">Rediģēt budžetu</h2>
                 <button class="modal-close" onclick="closeEditModal()">✕</button>
             </div>
             <form method="POST" class="modal-form">
@@ -659,19 +676,19 @@ $total_remaining = $total_budget_amount - $total_spent;
                 <input type="hidden" name="budget_id" id="edit_budget_id">
 
                 <div class="form-group">
-                    <label class="form-label">Budžeta nosaukums *</label>
+                    <label class="form-label" data-i18n="budget.edit.name.label">Budžeta nosaukums *</label>
                     <input type="text" name="budget_name" id="edit_budget_name"
                            class="form-input" required>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Summa (<?php echo $currSymbol; ?>) *</label>
+                    <label class="form-label"><span data-i18n="budget.edit.amount.label">Summa</span> (<?php echo $currSymbol; ?>) *</label>
                     <input type="number" name="budget_amount" id="edit_budget_amount"
                            class="form-input" step="0.01" min="0" required>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Brīdinājuma slieksnis (%) *</label>
+                    <label class="form-label" data-i18n="budget.edit.warning.label">Brīdinājuma slieksnis (%) *</label>
                     <input type="number" name="warning_threshold" id="edit_warning_threshold"
                            class="form-input" min="0" max="100" required>
                 </div>
@@ -688,7 +705,7 @@ $total_remaining = $total_budget_amount - $total_spent;
                             <button type="button" class="day-pill" data-day="6">S</button>
                             <button type="button" class="day-pill" data-day="0">Sv</button>
                         </div>
-                        <small style="color:var(--text-secondary); font-size:12px; margin-top:10px; display:block;">
+                        <small style="color:var(--text-secondary); font-size:12px; margin-top:10px; display:block;" data-i18n="budget.edit.day.hint">
                             Vismaz viena diena ir obligāta
                         </small>
                     </div>
@@ -697,7 +714,7 @@ $total_remaining = $total_budget_amount - $total_spent;
                 <!-- ── END RECURRING ──────────────────────────────────────── -->
 
                 <button type="submit" class="btn btn-primary btn-full">
-                    Atjaunināt budžetu
+                    <span data-i18n="budget.edit.submit">Atjaunināt budžetu</span>
                 </button>
             </form>
         </div>
@@ -714,6 +731,8 @@ $total_remaining = $total_budget_amount - $total_spent;
         }
     </script>
     <script src="../js/script.js"></script>
+    <script>window._i18nData=<?php echo json_encode($_traw); ?>;window._i18nLang=<?php echo json_encode($_lang); ?>;</script>
+    <script src="../js/language.js"></script>
     <script src="../js/budget.js"></script>
 </body>
 </html>

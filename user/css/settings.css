@@ -457,7 +457,47 @@ body.light-mode .feature-card {
 body.light-mode .feature-card:hover {
     box-shadow: 0 10px 30px rgba(20, 184, 166, 0.12);
 }
+/* ── Language toggle ───────────────────────────────────────────────────────────── */
 
+.lang-toggle-group {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.lang-btn {
+    padding: 6px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lang-btn .fi {
+    width: 36px;
+    height: 27px;
+    border-radius: 3px;
+    display: block;
+}
+
+.lang-btn.active {
+    background: rgba(20, 184, 166, 0.15);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.lang-btn:hover:not(.active) {
+    border-color: var(--primary);
+    color: var(--text-primary);
+}
 /* ── dashboard.css: sidebar, layout, stat cards, modals ─────────────────── */
 
 body.light-mode .dashboard-container {

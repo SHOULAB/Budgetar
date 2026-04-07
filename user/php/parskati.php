@@ -36,6 +36,23 @@ $currencySymbols = [
 ];
 $currSymbol = $currencySymbols[$_SESSION['currency']] ?? '<i class="fa-solid fa-euro-sign"></i>';
 
+// ── Load language + translations for PHP-rendered text ──────────────────────────
+$_SESSION['language'] = $_SESSION['language'] ?? 'lv';
+$stmt_lang = mysqli_prepare($savienojums,
+    "SELECT setting_value FROM BU_user_settings WHERE user_id = ? AND setting_key = 'language'");
+if ($stmt_lang) {
+    mysqli_stmt_bind_param($stmt_lang, "i", $user_id);
+    mysqli_stmt_execute($stmt_lang);
+    $res_lang = mysqli_stmt_get_result($stmt_lang);
+    if ($row_lang = mysqli_fetch_assoc($res_lang)) {
+        $_SESSION['language'] = $row_lang['setting_value'];
+    }
+    mysqli_stmt_close($stmt_lang);
+}
+$_lang = $_SESSION['language'];
+$_traw = json_decode(file_get_contents(__DIR__ . '/translate.json'), true) ?? [];
+$_t    = $_traw[$_lang] ?? $_traw['lv'] ?? [];
+
 // --- 1. Monthly income vs expenses (last 12 months) ---
 $monthly_data = [];
 for ($i = 11; $i >= 0; $i--) {
@@ -149,43 +166,43 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
     <!-- Main content -->
     <main class="reports-main">
         <div class="reports-header">
-            <h1 class="reports-title">Finanšu Pārskati</h1>
-            <p class="reports-subtitle">Pēdējo 12 mēnešu analīze un kopsavilkums</p>
+            <h1 class="reports-title" data-i18n="reports.page.title">Finanšu Pārskati</h1>
+            <p class="reports-subtitle" data-i18n="reports.page.subtitle">Pēdējo 12 mēnešu analīze un kopsavilkums</p>
         </div>
 
         <!-- Summary stat cards -->
         <div class="summary-grid">
             <div class="summary-card">
-                <div class="summary-card-label">Kopējie ienākumi</div>
+                <div class="summary-card-label" data-i18n="reports.stat.income">Kopējie ienākumi</div>
                 <div class="summary-card-value val-income"><?php echo $currSymbol; ?><?php echo number_format($alltime['income'], 2); ?></div>
-                <div class="summary-card-sub"><?php echo $alltime['income_count']; ?> transakcijas</div>
+                <div class="summary-card-sub"><?php echo $alltime['income_count']; ?> <span data-i18n="reports.stat.transactions">transakcijas</span></div>
             </div>
             <div class="summary-card">
-                <div class="summary-card-label">Kopējie izdevumi</div>
+                <div class="summary-card-label" data-i18n="reports.stat.expense">Kopējie izdevumi</div>
                 <div class="summary-card-value val-expense"><?php echo $currSymbol; ?><?php echo number_format($alltime['expense'], 2); ?></div>
-                <div class="summary-card-sub"><?php echo $alltime['expense_count']; ?> transakcijas</div>
+                <div class="summary-card-sub"><?php echo $alltime['expense_count']; ?> <span data-i18n="reports.stat.transactions">transakcijas</span></div>
             </div>
             <div class="summary-card">
-                <div class="summary-card-label">Kopējā bilance</div>
+                <div class="summary-card-label" data-i18n="reports.stat.balance">Kopējā bilance</div>
                 <div class="summary-card-value val-balance"><?php echo $currSymbol; ?><?php echo number_format($alltime_balance, 2); ?></div>
-                <div class="summary-card-sub">Visu laiku</div>
+                <div class="summary-card-sub" data-i18n="reports.stat.alltime">Visu laiku</div>
             </div>
             <div class="summary-card">
-                <div class="summary-card-label">Uzkrājumu koeficients</div>
+                <div class="summary-card-label" data-i18n="reports.stat.savings.rate">Uzkrājumu koeficients</div>
                 <div class="summary-card-value val-savings"><?php echo $savings_rate; ?>%</div>
                 <div class="savings-rate-bar">
                     <div class="savings-rate-fill" style="width: <?php echo max(0, min(100, $savings_rate)); ?>%"></div>
                 </div>
             </div>
             <div class="summary-card">
-                <div class="summary-card-label">Vidējie mēneša ienākumi</div>
+                <div class="summary-card-label" data-i18n="reports.stat.avg.income">Vidējie mēneša ienākumi</div>
                 <div class="summary-card-value val-income"><?php echo $currSymbol; ?><?php echo number_format($avg_income, 2); ?></div>
-                <div class="summary-card-sub">Pēdējie 12 mēneši</div>
+                <div class="summary-card-sub" data-i18n="reports.stat.last12">Pēdējie 12 mēneši</div>
             </div>
             <div class="summary-card">
-                <div class="summary-card-label">Vidējie mēneša izdevumi</div>
+                <div class="summary-card-label" data-i18n="reports.stat.avg.expense">Vidējie mēneša izdevumi</div>
                 <div class="summary-card-value val-expense"><?php echo $currSymbol; ?><?php echo number_format($avg_expense, 2); ?></div>
-                <div class="summary-card-sub">Pēdējie 12 mēneši</div>
+                <div class="summary-card-sub" data-i18n="reports.stat.last12">Pēdējie 12 mēneši</div>
             </div>
         </div>
 
@@ -194,34 +211,34 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
             <div class="insight-card">
                 <div class="insight-icon green"><i class="fa-solid fa-trophy"></i></div>
                 <div>
-                    <div class="insight-label">Labākais mēnesis</div>
+                    <div class="insight-label" data-i18n="reports.insight.best">Labākais mēnesis</div>
                     <div class="insight-value"><?php echo $best_month['label']; ?></div>
-                    <div class="insight-meta">Uzkrājums: <?php echo $currSymbol; ?><?php echo number_format($best_month['income'] - $best_month['expense'], 2); ?></div>
+                    <div class="insight-meta"><span data-i18n="reports.insight.savings.prefix">Uzkrājums:</span> <?php echo $currSymbol; ?><?php echo number_format($best_month['income'] - $best_month['expense'], 2); ?></div>
                 </div>
             </div>
             <div class="insight-card">
                 <div class="insight-icon red"><i class="fa-solid fa-fire"></i></div>
                 <div>
-                    <div class="insight-label">Sliktākais mēnesis</div>
+                    <div class="insight-label" data-i18n="reports.insight.worst">Sliktākais mēnesis</div>
                     <div class="insight-value"><?php echo $worst_month['label']; ?></div>
-                    <div class="insight-meta">Bilance: <?php echo $currSymbol; ?><?php echo number_format($worst_month['income'] - $worst_month['expense'], 2); ?></div>
+                    <div class="insight-meta"><span data-i18n="reports.insight.balance.prefix">Bilance:</span> <?php echo $currSymbol; ?><?php echo number_format($worst_month['income'] - $worst_month['expense'], 2); ?></div>
                 </div>
             </div>
             <div class="insight-card">
                 <div class="insight-icon purple"><i class="fa-solid fa-arrow-trend-up"></i></div>
                 <div>
-                    <div class="insight-label">Ikmēneša transakcijas</div>
-                    <div class="insight-value"><?php echo ($rec['recurring_income'] + $rec['recurring_expense']) > 0 ? 'Aktīvas' : 'Nav'; ?></div>
+                    <div class="insight-label" data-i18n="reports.insight.recurring">Ikmēneša transakcijas</div>
+                    <div class="insight-value"><?php echo ($rec['recurring_income'] + $rec['recurring_expense']) > 0 ? ($_t['reports.insight.recurring.active'] ?? 'Aktīvas') : ($_t['reports.insight.recurring.none'] ?? 'Nav'); ?></div>
                     <div class="insight-meta">
-                        Ienākumi: <?php echo $currSymbol; ?><?php echo number_format($rec['recurring_income'], 2); ?> |
-                        Izdevumi: <?php echo $currSymbol; ?><?php echo number_format($rec['recurring_expense'], 2); ?>
+                        <span data-i18n="reports.insight.income.prefix">Ienākumi:</span> <?php echo $currSymbol; ?><?php echo number_format($rec['recurring_income'], 2); ?> |
+                        <span data-i18n="reports.insight.expense.prefix">Izdevumi:</span> <?php echo $currSymbol; ?><?php echo number_format($rec['recurring_expense'], 2); ?>
                     </div>
                 </div>
             </div>
             <div class="insight-card">
                 <div class="insight-icon yellow"><i class="fa-solid fa-scale-balanced"></i></div>
                 <div>
-                    <div class="insight-label">Ienākumi vs Izdevumi</div>
+                    <div class="insight-label" data-i18n="reports.insight.ratio">Ienākumi vs Izdevumi</div>
                     <div class="insight-value"><?php echo $ratio; ?>x</div>
                     <div class="insight-meta">Par katru <?php echo $currSymbol; ?>1 izdevumiem nopelnīti <?php echo $currSymbol; ?><?php echo $ratio; ?></div>
                 </div>
@@ -235,8 +252,8 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
             <div class="chart-card chart-full">
                 <div class="chart-card-header">
                     <div>
-                        <div class="chart-card-title"><i class="fa-solid fa-chart-bar"></i> Ienākumi pret Izdevumiem</div>
-                        <div class="chart-card-subtitle">Mēneša salīdzinājums — pēdējie 12 mēneši</div>
+                        <div class="chart-card-title"><i class="fa-solid fa-chart-bar"></i> <span data-i18n="reports.chart.bar.title">Ienākumi pret Izdevumiem</span></div>
+                        <div class="chart-card-subtitle" data-i18n="reports.chart.bar.sub">Mēneša salīdzinājums — pēdējie 12 mēneši</div>
                     </div>
                 </div>
                 <div class="chart-wrapper">
@@ -248,8 +265,8 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
             <div class="chart-card">
                 <div class="chart-card-header">
                     <div>
-                        <div class="chart-card-title"><i class="fa-solid fa-chart-line"></i> Bilances dinamika</div>
-                        <div class="chart-card-subtitle">Kumulatīvā bilance pa mēnešiem</div>
+                        <div class="chart-card-title"><i class="fa-solid fa-chart-line"></i> <span data-i18n="reports.chart.line.title">Bilances dinamika</span></div>
+                        <div class="chart-card-subtitle" data-i18n="reports.chart.line.sub">Kumulatīvā bilance pa mēnešiem</div>
                     </div>
                 </div>
                 <div class="chart-wrapper">
@@ -261,8 +278,8 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
             <div class="chart-card">
                 <div class="chart-card-header">
                     <div>
-                        <div class="chart-card-title"><i class="fa-solid fa-piggy-bank"></i> Mēneša uzkrājums</div>
-                        <div class="chart-card-subtitle">Pozitīvs = uzkrājums, negatīvs = deficīts</div>
+                        <div class="chart-card-title"><i class="fa-solid fa-piggy-bank"></i> <span data-i18n="reports.chart.savings.title">Mēneša uzkrājums</span></div>
+                        <div class="chart-card-subtitle" data-i18n="reports.chart.savings.sub">Pozitīvs = uzkrājums, negatīvs = deficīts</div>
                     </div>
                 </div>
                 <div class="chart-wrapper">
@@ -274,8 +291,8 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
             <div class="chart-card">
                 <div class="chart-card-header">
                     <div>
-                        <div class="chart-card-title"><i class="fa-solid fa-rotate"></i> Ikmēneša vs Vienreizējas</div>
-                        <div class="chart-card-subtitle">Transakciju sadalījums pēc veida</div>
+                        <div class="chart-card-title"><i class="fa-solid fa-rotate"></i> <span data-i18n="reports.chart.donut.title">Ikmēneša vs Vienreizējas</span></div>
+                        <div class="chart-card-subtitle" data-i18n="reports.chart.donut.sub">Transakciju sadalījums pēc veida</div>
                     </div>
                 </div>
                 <div class="chart-wrapper" style="max-width:280px;margin:0 auto;">
@@ -283,15 +300,15 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
                 </div>
                 <div class="donut-legend">
                     <div class="legend-item">
-                        <span class="legend-label"><span class="legend-dot" style="background:#10b981"></span>Ikmēneša ienākumi</span>
+                        <span class="legend-label"><span class="legend-dot" style="background:#10b981"></span><span data-i18n="reports.legend.rec.income">Ikmēneša ienākumi</span></span>
                         <span class="legend-val"><?php echo $currSymbol; ?><?php echo number_format($rec['recurring_income'], 2); ?></span>
                     </div>
                     <div class="legend-item">
-                        <span class="legend-label"><span class="legend-dot" style="background:#34d399"></span>Vienreizēji ienākumi</span>
+                        <span class="legend-label"><span class="legend-dot" style="background:#34d399"></span><span data-i18n="reports.legend.once.income">Vienreizēji ienākumi</span></span>
                         <span class="legend-val"><?php echo $currSymbol; ?><?php echo number_format($rec['onetime_income'], 2); ?></span>
                     </div>
                     <div class="legend-item">
-                        <span class="legend-label"><span class="legend-dot" style="background:#ef4444"></span>Ikmēneša izdevumi</span>
+                        <span class="legend-label"><span class="legend-dot" style="background:#ef4444"></span><span data-i18n="reports.legend.rec.expense">Ikmēneša izdevumi</span></span>
                         <span class="legend-val"><?php echo $currSymbol; ?><?php echo number_format($rec['recurring_expense'], 2); ?></span>
                     </div>
                     <div class="legend-item">
@@ -305,8 +322,8 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
             <div class="chart-card chart-full">
                 <div class="chart-card-header">
                     <div>
-                        <div class="chart-card-title"><i class="fa-solid fa-wave-square"></i> Finanšu plūsma</div>
-                        <div class="chart-card-subtitle">Ienākumu un izdevumu apjoms laikā</div>
+                        <div class="chart-card-title"><i class="fa-solid fa-wave-square"></i> <span data-i18n="reports.chart.area.title">Finanšu plūsma</span></div>
+                        <div class="chart-card-subtitle" data-i18n="reports.chart.area.sub">Ienākumu un izdevumu apjoms laikā</div>
                     </div>
                 </div>
                 <div class="chart-wrapper">
@@ -327,6 +344,18 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
     const expense       = <?php echo json_encode(array_column($monthly_data, 'expense')); ?>;
     const trend         = <?php echo json_encode($balance_trend); ?>;
     const recurringData = <?php echo json_encode($rec); ?>;
+    const chartLabels = {
+        income:      <?php echo json_encode($_t['reports.chart.label.income']      ?? 'Ienākumi'); ?>,
+        expense:     <?php echo json_encode($_t['reports.chart.label.expense']     ?? 'Izdevumi'); ?>,
+        balance:     <?php echo json_encode($_t['reports.chart.label.balance']     ?? 'Bilance'); ?>,
+        savings:     <?php echo json_encode($_t['reports.chart.label.savings']     ?? 'Uzkrājums'); ?>,
+        donutLabels: <?php echo json_encode([
+            $_t['reports.legend.rec.income']   ?? 'Ikmēneša ienākumi',
+            $_t['reports.legend.once.income']  ?? 'Vienreizēji ienākumi',
+            $_t['reports.legend.rec.expense']  ?? 'Ikmēneša izdevumi',
+            $_t['reports.legend.once.expense'] ?? 'Vienreizēji izdevumi',
+        ]); ?>
+    };
 </script>
 <script src="../js/currency.js"></script>
 <script>
@@ -336,6 +365,8 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
     }
 </script>
 <script src="../js/script.js"></script>
+<script>window._i18nData=<?php echo json_encode($_traw); ?>;window._i18nLang=<?php echo json_encode($_lang); ?>;</script>
+<script src="../js/language.js"></script>
 <script src="../js/parskati.js"></script>
 </body>
 </html>
