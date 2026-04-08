@@ -17,15 +17,20 @@ $error_message   = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_field'])) {
     header('Content-Type: application/json');
 
-    $field     = $_POST['field']            ?? '';
-    $password  = trim($_POST['verify_password'] ?? '');
-    $new_value = trim($_POST['new_value']   ?? '');
+    $field       = $_POST['field']            ?? '';
+    $password    = trim($_POST['verify_password'] ?? '');
+    $new_value   = trim($_POST['new_value']   ?? '');
+    $verify_only = !empty($_POST['verify_only']);
 
     if (!in_array($field, ['username', 'email'], true)) {
         echo json_encode(['success' => false, 'error' => 'invalid_field']);
         exit();
     }
-    if ($password === '' || $new_value === '') {
+    if ($password === '') {
+        echo json_encode(['success' => false, 'error' => 'empty_fields']);
+        exit();
+    }
+    if (!$verify_only && $new_value === '') {
         echo json_encode(['success' => false, 'error' => 'empty_fields']);
         exit();
     }
@@ -41,6 +46,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_field'])) {
     }
     if (empty($hash) || !password_verify($password, $hash)) {
         echo json_encode(['success' => false, 'error' => 'wrong_password']);
+        exit();
+    }
+
+    // Password-only check — do not update anything
+    if ($verify_only) {
+        echo json_encode(['success' => true, 'verified' => true]);
         exit();
     }
 
@@ -939,17 +950,14 @@ if ($stmt) {
             fd.append('change_field', '1');
             fd.append('field', currentField);
             fd.append('verify_password', pwd);
-            fd.append('new_value', '__verify_only__');   // sentinel — will fail uniqueness but not reach DB
-
-            // We do the real verify with a dummy value; if server returns 'wrong_password' we know the pwd is bad.
-            // If it returns anything else, the pwd is correct (username_short / invalid_email etc.).
+            fd.append('verify_only', '1');
             fetch('settings.php', { method: 'POST', body: fd })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     verifyBtn.disabled = false;
                     verifyBtn.querySelector('span').textContent = t('change.modal.verify');
 
-                    if (!data.success && data.error === 'wrong_password') {
+                    if (!data.success) {
                         showError(step1Err, 'change.err.wrong_password');
                         return;
                     }
@@ -1010,10 +1018,14 @@ if ($stmt) {
                     if (data.success) {
                         if (currentField === 'username') {
                             document.getElementById('displayUsername').textContent = data.new_value;
-                            // Update sidebar avatar letter if present
-                            var avatarEls = document.querySelectorAll('.sidebar-avatar, .user-avatar-text');
+                            // Update sidebar avatar letter and name
+                            var avatarEls = document.querySelectorAll('.user-avatar');
                             avatarEls.forEach(function (el) {
                                 el.textContent = data.new_value.charAt(0).toUpperCase();
+                            });
+                            var nameEls = document.querySelectorAll('.user-name');
+                            nameEls.forEach(function (el) {
+                                el.textContent = data.new_value;
                             });
                         } else {
                             document.getElementById('displayEmail').textContent = data.new_value;

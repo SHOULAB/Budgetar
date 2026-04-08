@@ -545,10 +545,10 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                             
                             echo '<div class="calendar-day-transactions">';
                             if ($day_income > 0) {
-                                echo '<div class="calendar-transaction-badge income">+' . $currSymbol . number_format($day_income, 0) . '</div>';
+                                echo '<div class="calendar-transaction-badge income">+' . $currSymbol . number_format($day_income, 2) . '</div>';
                             }
                             if ($day_expense > 0) {
-                                echo '<div class="calendar-transaction-badge expense">-' . $currSymbol . number_format($day_expense, 0) . '</div>';
+                                echo '<div class="calendar-transaction-badge expense">-' . $currSymbol . number_format($day_expense, 2) . '</div>';
                             }
                             echo '</div>';
                         }
