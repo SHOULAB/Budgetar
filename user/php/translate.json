@@ -37,6 +37,13 @@
     "btn.save":               "Saglabāt izmaiņas",
     "btn.change":             "Mainīt",
 
+    "settings.saved": "Iestatījumi saglabāti veiksmīgi!",
+    "settings.reset": "Jūsu konta dati ir atiestatīti. Varat sākt no jauna.",
+
+    "unsaved.warning": "Uzmanību — jums ir nesaglabātas izmaiņas!",
+    "unsaved.reset":   "Atiestatīt",
+    "unsaved.save":    "Saglabāt izmaiņas",
+
     "change.modal.title.username": "Mainīt lietotājvārdu",
     "change.modal.title.email":    "Mainīt e-pastu",
     "change.modal.password.hint":  "Ievadiet pašreizējo paroli, lai turpinātu.",
@@ -361,6 +368,13 @@
     "account.delete.btn":     "Delete account",
     "btn.save":               "Save changes",
     "btn.change":             "Change",
+
+    "settings.saved": "Settings saved successfully!",
+    "settings.reset": "Your account data has been reset. You can start fresh.",
+
+    "unsaved.warning": "Careful — you have unsaved changes!",
+    "unsaved.reset":   "Reset",
+    "unsaved.save":    "Save Changes",
 
     "change.modal.title.username": "Change username",
     "change.modal.title.email":    "Change email",

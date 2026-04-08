@@ -221,7 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_account'])) {
             mysqli_stmt_close($stmt);
         }
 
-        $success_message = 'Jūsu konta dati ir atiestatīti. Varat sākt no jauna.';
+        $success_message = 'settings.reset';
     }
 }
 
@@ -329,7 +329,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings']) && !
     }
 
     if ($success) {
-        $success_message = 'Iestatījumi saglabāti veiksmīgi!';
+        $success_message = 'settings.saved';
     } elseif ($error_message === '') {
         $error_message = 'Kļūda saglabājot iestatījumus.';
     }
@@ -401,7 +401,7 @@ if ($stmt) {
             <?php if ($success_message): ?>
                 <div class="alert alert-success">
                     <i class="fa-solid fa-circle-check"></i>
-                    <?php echo htmlspecialchars($success_message); ?>
+                    <span data-i18n="<?php echo htmlspecialchars($success_message); ?>"><?php echo htmlspecialchars($success_message); ?></span>
                 </div>
             <?php endif; ?>
             <?php if ($error_message): ?>
@@ -659,7 +659,7 @@ if ($stmt) {
                         </div>
                     </section>
 
-                    <div class="settings-actions">
+                    <div class="settings-actions" style="display:none;">
                         <button type="submit" class="btn btn-primary">
                             <i class="fa-solid fa-floppy-disk"></i>
                             <span data-i18n="btn.save">Saglabāt izmaiņas</span>
@@ -668,6 +668,15 @@ if ($stmt) {
                 </form>
             </section>
         </main>
+    </div>
+
+    <!-- ── Unsaved changes bar ───────────────────────────────────────────── -->
+    <div id="unsavedBar" class="unsaved-bar" aria-live="polite">
+        <span class="unsaved-bar-text" data-i18n="unsaved.warning">Uzmanību — jums ir nesaglabātas izmaiņas!</span>
+        <div class="unsaved-bar-actions">
+            <button type="button" id="unsavedResetBtn" class="unsaved-bar-reset" data-i18n="unsaved.reset">Atiestatīt</button>
+            <button type="button" id="unsavedSaveBtn" class="btn btn-primary unsaved-bar-save" data-i18n="unsaved.save">Saglabāt izmaiņas</button>
+        </div>
     </div>
 
     <?php include __DIR__ . '/mobile_nav.php'; ?>
@@ -750,6 +759,96 @@ if ($stmt) {
             document.getElementById('passwordCurrent').value = '';
             document.getElementById('passwordNew').value     = '';
             document.getElementById('passwordConfirm').value = '';
+        });
+    })();
+
+    // ── Unsaved changes bar ───────────────────────────────────────────────────
+    (function () {
+        'use strict';
+
+        var form       = document.getElementById('settingsForm');
+        var bar        = document.getElementById('unsavedBar');
+        var resetBtn   = document.getElementById('unsavedResetBtn');
+        var saveBtn    = document.getElementById('unsavedSaveBtn');
+
+        if (!form || !bar) return;
+
+        // Snapshot initial values
+        function snapshot() {
+            var map = {};
+            Array.from(form.elements).forEach(function (el) {
+                if (!el.name) return;
+                if (el.type === 'radio') { if (el.checked) map[el.name] = el.value; }
+                else if (el.type === 'checkbox') { map[el.name] = el.checked; }
+                else { map[el.name] = el.value; }
+            });
+            return map;
+        }
+
+        var original = snapshot();
+        var dirty    = false;
+
+        function isDirty() {
+            var current = snapshot();
+            for (var k in original) {
+                if (original[k] !== current[k]) return true;
+            }
+            return false;
+        }
+
+        function setBar(show) {
+            dirty = show;
+            if (show) bar.classList.add('visible');
+            else      bar.classList.remove('visible');
+        }
+
+        function checkDirty() { setBar(isDirty()); }
+
+        form.addEventListener('input',  checkDirty);
+        form.addEventListener('change', checkDirty);
+
+        // ── Watch custom currency dropdown ────────────────────────────────────
+        var customOptions = document.getElementById('customOptions');
+        if (customOptions) {
+            customOptions.addEventListener('click', function (e) {
+                if (e.target.closest('.custom-option')) {
+                    setTimeout(checkDirty, 0);
+                }
+            });
+        }
+
+        // ── Watch language buttons ────────────────────────────────────────────
+        document.querySelectorAll('.lang-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                setTimeout(checkDirty, 0);
+            });
+        });
+
+        resetBtn.addEventListener('click', function () {
+            // Restore all inputs to original snapshot
+            Array.from(form.elements).forEach(function (el) {
+                if (!el.name || !(el.name in original)) return;
+                if (el.type === 'radio') { el.checked = (el.value === original[el.name]); }
+                else if (el.type === 'checkbox') { el.checked = original[el.name]; }
+                else { el.value = original[el.name]; }
+            });
+            // Re-apply theme preview to match restored radio
+            var themeRadio = form.querySelector('input[name="theme"]:checked');
+            if (themeRadio && typeof applyTheme === 'function') applyTheme(themeRadio.value);
+            // Restore currency custom select display
+            if (typeof window._currencyRestoreDisplay === 'function') window._currencyRestoreDisplay();
+            setBar(false);
+        });
+
+        saveBtn.addEventListener('click', function () {
+            // Sync localStorage before submit (form.submit() skips submit event listeners)
+            var langInput = document.getElementById('languageInput');
+            if (langInput) localStorage.setItem('budgetar_language', langInput.value);
+            var themeSelected = form.querySelector('input[name="theme"]:checked');
+            if (themeSelected) localStorage.setItem('budgetar_theme', themeSelected.value);
+            var currencySelect = document.getElementById('currencySelect');
+            if (currencySelect) localStorage.setItem('budgetar_currency', currencySelect.value);
+            form.submit();
         });
     })();
     </script>
