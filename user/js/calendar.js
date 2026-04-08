@@ -765,3 +765,151 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+
+// ─── Month / Year picker ──────────────────────────────────────────────────────
+
+let _cpOpen        = false;
+let _cpMode        = 'month'; // 'month' | 'year'
+let _cpDisplayYear = null;    // year shown in the month grid header
+let _cpYearBase    = null;    // first year of the visible year page
+
+const _CP_YEAR_PAGE = 12; // 4 cols × 3 rows
+
+function _cpDropdown()  { return document.getElementById('calPickerDropdown'); }
+function _cpToggleBtn() { return document.getElementById('calPickerToggle'); }
+
+function _cpOpen_picker() {
+    _cpDisplayYear = currentYear;
+    _cpYearBase    = currentYear - Math.floor(_CP_YEAR_PAGE / 2);
+    _cpMode        = 'month';
+    _cpRenderMonth();
+    const d = _cpDropdown(), b = _cpToggleBtn();
+    if (d) d.classList.add('open');
+    if (b) b.classList.add('open');
+    _cpOpen = true;
+}
+
+function _cpClose() {
+    const d = _cpDropdown(), b = _cpToggleBtn();
+    if (d) d.classList.remove('open');
+    if (b) b.classList.remove('open');
+    _cpOpen = false;
+}
+
+function _cpRenderMonth() {
+    const dropdown = _cpDropdown();
+    if (!dropdown) return;
+    const names = (typeof calendarStrings !== 'undefined' && calendarStrings.monthNames)
+        ? calendarStrings.monthNames.slice(1)
+        : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const todayYear  = new Date().getFullYear();
+    const todayMonth = new Date().getMonth() + 1;
+
+    let cells = '';
+    for (let m = 1; m <= 12; m++) {
+        let cls = 'cp-cell';
+        if (m === currentMonth && _cpDisplayYear === currentYear) cls += ' cp-current';
+        else if (m === todayMonth && _cpDisplayYear === todayYear) cls += ' cp-today';
+        cells += `<button type="button" class="${cls}" data-cp-month="${m}">${names[m - 1]}</button>`;
+    }
+
+    dropdown.innerHTML = `
+        <div class="cp-nav-row">
+            <button type="button" class="cp-nav-btn" data-cp-action="year-step" data-cp-delta="-1">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button type="button" class="cp-nav-label" data-cp-action="switch-year">${_cpDisplayYear}</button>
+            <button type="button" class="cp-nav-btn" data-cp-action="year-step" data-cp-delta="1">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+        <div class="cp-month-grid">${cells}</div>`;
+}
+
+function _cpRenderYear() {
+    const dropdown = _cpDropdown();
+    if (!dropdown) return;
+    const todayYear = new Date().getFullYear();
+    const endYear   = _cpYearBase + _CP_YEAR_PAGE - 1;
+
+    let cells = '';
+    for (let i = 0; i < _CP_YEAR_PAGE; i++) {
+        const y = _cpYearBase + i;
+        let cls = 'cp-cell';
+        if (y === currentYear) cls += ' cp-current';
+        else if (y === todayYear) cls += ' cp-today';
+        cells += `<button type="button" class="${cls}" data-cp-year="${y}">${y}</button>`;
+    }
+
+    dropdown.innerHTML = `
+        <div class="cp-nav-row">
+            <button type="button" class="cp-nav-btn" data-cp-action="year-page" data-cp-delta="-1">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <span class="cp-nav-label cp-label-static">${_cpYearBase}&ndash;${endYear}</span>
+            <button type="button" class="cp-nav-btn" data-cp-action="year-page" data-cp-delta="1">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+        <div class="cp-year-grid">${cells}</div>`;
+}
+
+function _cpHandleDropdownClick(e) {
+    const target = e.target.closest('[data-cp-action],[data-cp-month],[data-cp-year]');
+    if (!target) return;
+    e.stopPropagation();
+
+    const action = target.dataset.cpAction;
+    const month  = target.dataset.cpMonth;
+    const year   = target.dataset.cpYear;
+
+    if (action === 'year-step') {
+        _cpDisplayYear += parseInt(target.dataset.cpDelta, 10);
+        _cpRenderMonth();
+    } else if (action === 'switch-year') {
+        _cpMode     = 'year';
+        _cpYearBase = _cpDisplayYear - Math.floor(_CP_YEAR_PAGE / 2);
+        _cpRenderYear();
+    } else if (action === 'year-page') {
+        _cpYearBase += parseInt(target.dataset.cpDelta, 10) * _CP_YEAR_PAGE;
+        _cpRenderYear();
+    } else if (year !== undefined) {
+        _cpDisplayYear = parseInt(year, 10);
+        _cpMode        = 'month';
+        _cpRenderMonth();
+    } else if (month !== undefined) {
+        const m = parseInt(month, 10);
+        _cpClose();
+        loadCalendarMonth(m, _cpDisplayYear);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const btn = document.getElementById('calPickerToggle');
+    const dropdown = document.getElementById('calPickerDropdown');
+    if (btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (_cpOpen) _cpClose();
+            else _cpOpen_picker();
+        });
+    }
+    if (dropdown) {
+        dropdown.addEventListener('click', _cpHandleDropdownClick);
+    }
+});
+
+document.addEventListener('click', function(e) {
+    if (!_cpOpen) return;
+    const wrap = document.querySelector('.cal-month-picker-wrap');
+    if (wrap && !wrap.contains(e.target)) _cpClose();
+});
+
+// Hook into existing Escape key handler by closing the picker there too
+(function() {
+    const _orig = document.onkeydown;
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && _cpOpen) _cpClose();
+    });
+})();

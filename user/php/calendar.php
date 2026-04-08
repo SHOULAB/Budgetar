@@ -472,11 +472,17 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                     <a href="?month=<?php echo $prev_month; ?>&year=<?php echo $prev_year; ?>" class="calendar-nav" data-month="<?php echo $prev_month; ?>" data-year="<?php echo $prev_year; ?>" data-direction="prev" data-i18n="cal.nav.prev">
                         ← Iepriekšējais
                     </a>
-                    <h2 class="calendar-month">
-                        <?php 
-                        echo $month_names_php[$current_month] . ' ' . $current_year;
-                        ?>
-                    </h2>
+                    <div class="cal-month-picker-wrap">
+                        <button type="button" class="cal-picker-btn" id="calPickerToggle" aria-label="Select month and year">
+                            <h2 class="calendar-month">
+                                <?php 
+                                echo $month_names_php[$current_month] . ' ' . $current_year;
+                                ?>
+                            </h2>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="cal-picker-dropdown" id="calPickerDropdown"></div>
+                    </div>
                     <a href="?month=<?php echo $next_month; ?>&year=<?php echo $next_year; ?>" class="calendar-nav" data-month="<?php echo $next_month; ?>" data-year="<?php echo $next_year; ?>" data-direction="next" data-i18n="cal.nav.next">
                         Nākamais →
                     </a>
