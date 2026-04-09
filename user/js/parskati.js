@@ -10,6 +10,18 @@ const textColor  = '#94a3b8';
 const fontFamily = "'Segoe UI', sans-serif";
 const isMobile   = window.innerWidth <= 480;
 
+// On mobile, give the full-width bar chart the same height as the other charts
+if (isMobile) {
+    document.getElementById('barChart').setAttribute('height', '180');
+    document.getElementById('areaChart').setAttribute('height', '180');
+}
+const mSlice     = isMobile ? 4 : 12;
+const mLabels    = labels.slice(-mSlice);
+const mIncome    = income.slice(-mSlice);
+const mExpense   = expense.slice(-mSlice);
+const mTrend     = trend.slice(-mSlice);
+const mSavings   = savings.slice(-mSlice);
+
 // Helper to get current currency symbol dynamically for charts
 function getCurrSymbolDynamic() {
     return getCurrencyTextSymbol(getCurrentCurrency());
@@ -45,18 +57,18 @@ const scalesDefaults = {
 new Chart(document.getElementById('barChart'), {
     type: 'bar',
     data: {
-        labels,
+        labels: mLabels,
         datasets: [
             {
                 label: chartLabels.income,
-                data: income,
+                data: mIncome,
                 backgroundColor: 'rgba(16,185,129,0.8)',
                 borderRadius: 6,
                 borderSkipped: false,
             },
             {
                 label: chartLabels.expense,
-                data: expense,
+                data: mExpense,
                 backgroundColor: 'rgba(239,68,68,0.8)',
                 borderRadius: 6,
                 borderSkipped: false,
@@ -74,10 +86,10 @@ new Chart(document.getElementById('barChart'), {
 new Chart(document.getElementById('lineChart'), {
     type: 'line',
     data: {
-        labels,
+        labels: mLabels,
         datasets: [{
             label: chartLabels.balance,
-            data: trend,
+            data: mTrend,
             borderColor: '#8b5cf6',
             backgroundColor: 'rgba(139,92,246,0.15)',
             borderWidth: 2.5,
@@ -98,11 +110,11 @@ new Chart(document.getElementById('lineChart'), {
 new Chart(document.getElementById('savingsChart'), {
     type: 'bar',
     data: {
-        labels,
+        labels: mLabels,
         datasets: [{
             label: chartLabels.savings,
-            data: savings,
-            backgroundColor: savings.map(v => v >= 0 ? 'rgba(16,185,129,0.8)' : 'rgba(239,68,68,0.8)'),
+            data: mSavings,
+            backgroundColor: mSavings.map(v => v >= 0 ? 'rgba(16,185,129,0.8)' : 'rgba(239,68,68,0.8)'),
             borderRadius: 6,
             borderSkipped: false,
         }]
@@ -156,11 +168,11 @@ new Chart(document.getElementById('donutChart'), {
 new Chart(document.getElementById('areaChart'), {
     type: 'line',
     data: {
-        labels,
+        labels: mLabels,
         datasets: [
             {
                 label: chartLabels.income,
-                data: income,
+                data: mIncome,
                 borderColor: '#10b981',
                 backgroundColor: 'rgba(16,185,129,0.15)',
                 borderWidth: 2,
@@ -171,7 +183,7 @@ new Chart(document.getElementById('areaChart'), {
             },
             {
                 label: chartLabels.expense,
-                data: expense,
+                data: mExpense,
                 borderColor: '#ef4444',
                 backgroundColor: 'rgba(239,68,68,0.12)',
                 borderWidth: 2,

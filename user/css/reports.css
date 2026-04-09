@@ -29,12 +29,6 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.summary-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
 .summary-card-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); font-weight: 600; }
@@ -48,6 +42,78 @@
 .val-neutral { color: var(--text-primary); }
 
 /* ── Savings rate bar ────────────────────────────────────────────────────── */
+
+/* ── Savings info icon & tooltip ─────────────────────────────────────────── */
+
+.savings-card-with-info {
+    position: relative;
+}
+
+.savings-info-icon {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 15px;
+    text-align: center;
+    cursor: default;
+    user-select: none;
+    transition: background 0.2s, color 0.2s;
+}
+
+.savings-info-icon:hover {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+.savings-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    right: 0;
+    width: max-content;
+    max-width: 280px;
+    background: var(--card-bg, #1e1e2e);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+    padding: 10px 12px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+    text-align: left;
+}
+
+.savings-info-icon:hover .savings-tooltip {
+    opacity: 1;
+}
+
+.savings-tooltip-desc {
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.savings-tooltip-formula {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
 
 .savings-rate-bar {
     margin-top: 12px;

@@ -14,6 +14,10 @@
             var key = el.getAttribute('data-i18n-placeholder');
             if (dict[key] !== undefined) el.placeholder = dict[key];
         });
+        document.querySelectorAll('[data-i18n-tooltip]').forEach(function (el) {
+            var key = el.getAttribute('data-i18n-tooltip');
+            if (dict[key] !== undefined) el.setAttribute('data-tooltip', dict[key]);
+        });
         document.querySelectorAll('.lang-btn').forEach(function (btn) {
             btn.classList.toggle('active', btn.dataset.lang === lang);
         });

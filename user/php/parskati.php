@@ -189,7 +189,13 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
                 <div class="summary-card-value val-balance"><?php echo $currSymbol; ?><?php echo number_format($alltime_balance, 2); ?></div>
                 <div class="summary-card-sub" data-i18n="reports.stat.alltime">Visu laiku</div>
             </div>
-            <div class="summary-card">
+            <div class="summary-card savings-card-with-info">
+                <span class="savings-info-icon">?
+                    <span class="savings-tooltip">
+                        <span class="savings-tooltip-desc" data-i18n="reports.stat.savings.rate.tooltip.desc"><?php echo htmlspecialchars($_t['reports.stat.savings.rate.tooltip.desc'] ?? 'Parāda, cik lielu daļu no kopējiem ienākumiem tu esi saglabājis.'); ?></span>
+                        <span class="savings-tooltip-formula" data-i18n="reports.stat.savings.rate.tooltip.formula"><?php echo htmlspecialchars($_t['reports.stat.savings.rate.tooltip.formula'] ?? 'Kopējā bilance ÷ Kopējie ienākumi × 100%'); ?></span>
+                    </span>
+                </span>
                 <div class="summary-card-label" data-i18n="reports.stat.savings.rate">Uzkrājumu koeficients</div>
                 <div class="summary-card-value val-savings"><?php echo $savings_rate; ?>%</div>
                 <div class="savings-rate-bar">
