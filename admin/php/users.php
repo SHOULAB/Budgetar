@@ -100,42 +100,11 @@ $total_users = count($users);
 </head>
 <body>
     <div class="admin-container">
-        <aside class="admin-sidebar">
-            <div class="admin-logo">
-                <img src="../../assets/image/logo.png" alt="Budgetar Logo" class="logo-img">
-                <span style="font-size: 20px; font-weight: 700;">Admin Panel</span>
-            </div>
-
-            <nav class="admin-nav">
-                <a href="index.php" class="admin-nav-item">
-                    <span class="admin-nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
-                    <span>Dashboard</span>
-                </a>
-                <a href="users.php" class="admin-nav-item active">
-                    <span class="admin-nav-icon"><i class="fa-solid fa-user"></i></span>
-                    <span>Lietotāji</span>
-                </a>
-                <a href="settings.php" class="admin-nav-item">
-                    <span class="admin-nav-icon"><i class="fa-solid fa-gear"></i></span>
-                    <span>Iestatījumi</span>
-                </a>
-            </nav>
-
-            <div style="margin-top: auto;">
-                <a href="../../user/php/calendar.php" class="admin-nav-item" style="color: var(--text-secondary);">
-                    <span class="admin-nav-icon"><i class="fa-solid fa-door-closed"></i></span>
-                    <span>Iziet</span>
-                </a>
-            </div>
-        </aside>
+        <?php $active_page = 'users'; include 'sidebar.php'; ?>
 
         <main class="admin-content">
             <div class="admin-header">
                 <h1 class="admin-title">Lietotāju pārvaldība</h1>
-                <div class="admin-user">
-                    <span><i class="fa-solid fa-user-tie"></i></span>
-                    <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'Admin'); ?></span>
-                </div>
             </div>
 
             <?php if ($error): ?>

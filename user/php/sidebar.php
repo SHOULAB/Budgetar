@@ -28,16 +28,16 @@
             <span class="nav-icon"><i class="fa-solid fa-wallet"></i></span>
             <span class="nav-text" data-i18n="nav.budget">Budžets</span>
         </a>
-        <?php if (($_SESSION['role'] ?? 'user') === 'administrator'): ?>
-        <a href="../../admin/php/index.php" class="nav-item">
-            <span class="nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
-            <span class="nav-text">Admin Panel</span>
-        </a>
-        <?php endif; ?>
         <a href="settings.php" class="nav-item <?php echo ($active_page === 'settings')  ? 'active' : ''; ?>">
             <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
             <span class="nav-text" data-i18n="nav.settings">Iestatījumi</span>
         </a>
+        <?php if (($_SESSION['role'] ?? 'user') === 'administrator'): ?>
+        <a href="../../admin/php/index.php" class="nav-item nav-item--bottom">
+            <span class="nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
+            <span class="nav-text">Admin Panel</span>
+        </a>
+        <?php endif; ?>
     </nav>
 
     <div class="sidebar-footer">
