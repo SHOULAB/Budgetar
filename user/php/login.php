@@ -31,7 +31,7 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
         "SELECT u.id, u.username, u.email, u.role
          FROM BU_users u
          JOIN BU_remember_tokens t ON t.user_id = u.id
-         WHERE t.token = ? AND t.expires_at > NOW()");
+         WHERE t.token = ? AND t.expires_at > NOW() AND u.is_active = 1");
 
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, "s", $token);
@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = $_t['login.err.empty'] ?? 'Lūdzu aizpildiet visus laukus!';
     } else {
         $stmt = mysqli_prepare($savienojums,
-            "SELECT id, username, email, password, role FROM BU_users WHERE email = ?");;
+            "SELECT id, username, email, password, role, is_active FROM BU_users WHERE email = ?");
 
         if ($stmt === false) {
             $error = $_t['login.err.system'] ?? 'Sistēmas kļūda. Lūdzu mēģinājiet vēlāk.';
@@ -96,10 +96,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mysqli_stmt_store_result($stmt);
 
             if (mysqli_stmt_num_rows($stmt) === 1) {
-                mysqli_stmt_bind_result($stmt, $user_id, $username, $user_email, $hashed_password, $user_role);
+                mysqli_stmt_bind_result($stmt, $user_id, $username, $user_email, $hashed_password, $user_role, $user_is_active);
                 mysqli_stmt_fetch($stmt);
 
-                if (password_verify($password, $hashed_password)) {
+                if (!$user_is_active) {
+                    $error = $_t['login.err.deactivated'] ?? 'Jūsu konts ir deāktivēts. Sazinieties ar administrātoru.';
+                } elseif (password_verify($password, $hashed_password)) {
                     // ── Set session ───────────────────────────────────────────
                     $_SESSION['user_id'] = $user_id;
                     $_SESSION['username'] = $username;

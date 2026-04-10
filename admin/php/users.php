@@ -16,20 +16,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user_id = intval($_POST['user_id']);
         $action = $_POST['action'];
 
-        if ($action === 'delete') {
+        if ($action === 'deactivate') {
             if (isset($_SESSION['user_id']) && $user_id == $_SESSION['user_id']) {
-                $error = 'Jūs nevarat dzēst savu kontu!';
+                $error = 'Jūs nevarat deāktivēt savu kontu!';
             } else {
-                $stmt = mysqli_prepare($savienojums, "DELETE FROM BU_users WHERE id = ?");
+                $stmt = mysqli_prepare($savienojums, "UPDATE BU_users SET is_active = 0 WHERE id = ?");
                 mysqli_stmt_bind_param($stmt, "i", $user_id);
 
                 if (mysqli_stmt_execute($stmt)) {
-                    $success = 'Lietotājs veiksmīgi dzēsts!';
+                    $success = 'Lietotājs veiksmīgi deāktivēts!';
                 } else {
-                    $error = 'Kļūda dzēšot lietotāju!';
+                    $error = 'Kļūda deāktivējot lietotāju!';
                 }
                 mysqli_stmt_close($stmt);
             }
+        }
+
+        if ($action === 'activate') {
+            $stmt = mysqli_prepare($savienojums, "UPDATE BU_users SET is_active = 1 WHERE id = ?");
+            mysqli_stmt_bind_param($stmt, "i", $user_id);
+            if (mysqli_stmt_execute($stmt)) {
+                $success = 'Lietotājs veiksmīgi aktivēts!';
+            } else {
+                $error = 'Kļūda aktivējot lietotāju!';
+            }
+            mysqli_stmt_close($stmt);
         }
 
         if ($action === 'toggle_role') {
@@ -56,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // search bar
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-$query = "SELECT id, username, email, role, created_at, last_login FROM BU_users WHERE 1=1";
+$query = "SELECT id, username, email, role, created_at, last_login, is_active FROM BU_users WHERE 1=1";
 $params = [];
 $types = "";
 
@@ -158,14 +169,17 @@ $total_users = count($users);
                         </thead>
                         <tbody>
                             <?php foreach ($users as $user): ?>
-                                <tr>
+                                <tr class="<?php echo !$user['is_active'] ? 'row-deactivated' : ''; ?>">
                                     <td>
                                         <div class="user-info">
                                             <div class="user-avatar">
                                                 <?php echo strtoupper(substr($user['username'], 0, 1)); ?>
                                             </div>
                                             <div class="user-details">
-                                                <span class="user-name"><?php echo htmlspecialchars($user['username']); ?></span>
+                                                <span class="user-name">
+                                                    <?php echo htmlspecialchars($user['username']); ?>
+                                                    <?php if (!$user['is_active']): ?><span class="badge-deactivated">Deāktivēts</span><?php endif; ?>
+                                                </span>
                                                 <span class="user-email"><?php echo htmlspecialchars($user['email']); ?></span>
                                             </div>
                                         </div>
@@ -177,13 +191,22 @@ $total_users = count($users);
                                             <button class="tbl-btn tbl-btn--edit" onclick="alert('Edit funkcionalitāte tiks pievienota drīzumā')" title="Rediģēt">
                                                 <i class="fa-solid fa-pencil"></i>
                                             </button>
-                                            <form method="POST" style="display: inline;" onsubmit="return confirm('Vai tiešām vēlaties dzēst šo lietotāju?')">
-                                                <input type="hidden" name="action" value="delete">
+                                            <?php if ($user['is_active']): ?>
+                                            <button class="tbl-btn tbl-btn--delete"
+                                                title="Deāktivēt"
+                                                onclick="openDeactivateModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars(addslashes($user['username'])); ?>')"
+                                            >
+                                                <i class="fa-solid fa-ban"></i>
+                                            </button>
+                                            <?php else: ?>
+                                            <form method="POST" style="display:inline;">
+                                                <input type="hidden" name="action" value="activate">
                                                 <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
-                                                <button type="submit" class="tbl-btn tbl-btn--delete" title="Dzēst">
-                                                    <i class="fa-solid fa-trash"></i>
+                                                <button type="submit" class="tbl-btn tbl-btn--activate" title="Aktivēt">
+                                                    <i class="fa-solid fa-circle-check"></i>
                                                 </button>
                                             </form>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
@@ -196,5 +219,36 @@ $total_users = count($users);
     </div>
 
     <script src="../js/script.js"></script>
+
+    <!-- Deactivate confirmation modal -->
+    <div id="deactivateModal" class="adm-modal" style="display:none;">
+        <div class="adm-modal-box">
+            <div class="adm-modal-icon"><i class="fa-solid fa-ban"></i></div>
+            <h2 class="adm-modal-title">Deāktivēt kontu?</h2>
+            <p class="adm-modal-desc">Lietotājs <strong id="deactivateUsername"></strong> nevarēs piekļūst savam kontam, līdz tas tiks aktivēts atkārtoti.</p>
+            <div class="adm-modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeDeactivateModal()">Atcelt</button>
+                <form method="POST" id="deactivateForm" style="display:inline;">
+                    <input type="hidden" name="action" value="deactivate">
+                    <input type="hidden" name="user_id" id="deactivateUserId">
+                    <button type="submit" class="btn btn-danger">Deāktivēt</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function openDeactivateModal(userId, username) {
+        document.getElementById('deactivateUserId').value = userId;
+        document.getElementById('deactivateUsername').textContent = username;
+        document.getElementById('deactivateModal').style.display = 'flex';
+    }
+    function closeDeactivateModal() {
+        document.getElementById('deactivateModal').style.display = 'none';
+    }
+    document.getElementById('deactivateModal').addEventListener('click', function(e) {
+        if (e.target === this) closeDeactivateModal();
+    });
+    </script>
 </body>
 </html>

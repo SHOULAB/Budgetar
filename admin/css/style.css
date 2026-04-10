@@ -581,6 +581,102 @@ body {
     transform: translateY(-1px);
 }
 
+.tbl-btn--activate {
+    background: rgba(20, 184, 166, 0.1);
+    border-color: rgba(20, 184, 166, 0.2);
+    color: var(--primary);
+}
+
+.tbl-btn--activate:hover {
+    background: rgba(20, 184, 166, 0.22);
+    border-color: var(--primary);
+    transform: translateY(-1px);
+}
+
+/* Deactivated row highlight */
+tr.row-deactivated td {
+    opacity: 0.55;
+}
+
+tr.row-deactivated .user-avatar {
+    background: rgba(239, 68, 68, 0.25);
+    color: var(--danger);
+}
+
+.badge-deactivated {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 99px;
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--danger);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    margin-left: 6px;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* Deactivate confirmation modal */
+.adm-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.adm-modal-box {
+    background: #162032;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 32px 28px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+}
+
+.adm-modal-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--danger);
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.adm-modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 10px;
+}
+
+.adm-modal-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0 0 24px;
+}
+
+.adm-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.adm-modal-actions .btn {
+    min-width: 110px;
+}
+
 .user-role-badge {
     font-size: 11px;
     font-weight: 600;
