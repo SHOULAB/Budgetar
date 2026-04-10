@@ -28,7 +28,7 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
     $token = $_COOKIE['remember_token'];
 
     $stmt = mysqli_prepare($savienojums,
-        "SELECT u.id, u.username, u.email
+        "SELECT u.id, u.username, u.email, u.role
          FROM BU_users u
          JOIN BU_remember_tokens t ON t.user_id = u.id
          WHERE t.token = ? AND t.expires_at > NOW()");
@@ -44,6 +44,7 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['email']    = $user['email'];
+            $_SESSION['role']     = $user['role'] ?? 'user';
 
             // Fetch user theme setting
             $theme_stmt = mysqli_prepare($savienojums, "SELECT setting_value FROM BU_user_settings WHERE user_id = ? AND setting_key = 'theme'");
@@ -81,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = $_t['login.err.empty'] ?? 'Lūdzu aizpildiet visus laukus!';
     } else {
         $stmt = mysqli_prepare($savienojums,
-            "SELECT id, username, email, password FROM BU_users WHERE email = ?");
+            "SELECT id, username, email, password, role FROM BU_users WHERE email = ?");;
 
         if ($stmt === false) {
             $error = $_t['login.err.system'] ?? 'Sistēmas kļūda. Lūdzu mēģinājiet vēlāk.';
@@ -91,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mysqli_stmt_store_result($stmt);
 
             if (mysqli_stmt_num_rows($stmt) === 1) {
-                mysqli_stmt_bind_result($stmt, $user_id, $username, $user_email, $hashed_password);
+                mysqli_stmt_bind_result($stmt, $user_id, $username, $user_email, $hashed_password, $user_role);
                 mysqli_stmt_fetch($stmt);
 
                 if (password_verify($password, $hashed_password)) {
@@ -99,6 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_id'] = $user_id;
                     $_SESSION['username'] = $username;
                     $_SESSION['email']    = $user_email;
+                    $_SESSION['role']     = $user_role ?? 'user';
 
                     // Fetch user theme setting
                     $theme_stmt = mysqli_prepare($savienojums, "SELECT setting_value FROM BU_user_settings WHERE user_id = ? AND setting_key = 'theme'");

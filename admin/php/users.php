@@ -2,8 +2,8 @@
 session_start();
 require_once('../../assets/database.php');
 
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
-    header("Location: login.php");
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'administrator') {
+    header("Location: ../../user/php/login.php");
     exit();
 }
 
@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $_POST['action'];
 
         if ($action === 'delete') {
-            if (isset($_SESSION['admin_id']) && $user_id == $_SESSION['admin_id']) {
+            if (isset($_SESSION['user_id']) && $user_id == $_SESSION['user_id']) {
                 $error = 'Jūs nevarat dzēst savu kontu!';
             } else {
                 $stmt = mysqli_prepare($savienojums, "DELETE FROM BU_users WHERE id = ?");
@@ -31,13 +31,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mysqli_stmt_close($stmt);
             }
         }
+
+        if ($action === 'toggle_role') {
+            $stmt = mysqli_prepare($savienojums, "SELECT role FROM BU_users WHERE id = ?");
+            mysqli_stmt_bind_param($stmt, "i", $user_id);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_bind_result($stmt, $current_role);
+            mysqli_stmt_fetch($stmt);
+            mysqli_stmt_close($stmt);
+
+            $new_role = ($current_role === 'administrator') ? 'user' : 'administrator';
+            $stmt = mysqli_prepare($savienojums, "UPDATE BU_users SET role = ? WHERE id = ?");
+            mysqli_stmt_bind_param($stmt, "si", $new_role, $user_id);
+            if (mysqli_stmt_execute($stmt)) {
+                $success = $new_role === 'administrator' ? 'Lietotājs veiksmīgi iecelts par administratoru!' : 'Administratora tiesības veiksmīgi atsauktas!';
+            } else {
+                $error = 'Kļūda mainīot lomās!';
+            }
+            mysqli_stmt_close($stmt);
+        }
     }
 }
 
 // search bar
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-$query = "SELECT id, username, email, created_at FROM BU_users WHERE 1=1";
+$query = "SELECT id, username, email, role, created_at FROM BU_users WHERE 1=1";
 $params = [];
 $types = "";
 
@@ -103,7 +122,7 @@ $total_users = count($users);
             </nav>
 
             <div style="margin-top: auto;">
-                <a href="logout.php" class="admin-nav-item" style="color: var(--danger);">
+                <a href="../../user/php/calendar.php" class="admin-nav-item" style="color: var(--text-secondary);">
                     <span class="admin-nav-icon"><i class="fa-solid fa-door-closed"></i></span>
                     <span>Iziet</span>
                 </a>
@@ -115,7 +134,7 @@ $total_users = count($users);
                 <h1 class="admin-title">Lietotāju pārvaldība</h1>
                 <div class="admin-user">
                     <span><i class="fa-solid fa-user-tie"></i></span>
-                    <span><?php echo htmlspecialchars($_SESSION['admin_username'] ?? 'Admin'); ?></span>
+                    <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'Admin'); ?></span>
                 </div>
             </div>
 
@@ -178,6 +197,7 @@ $total_users = count($users);
                                             <div class="user-details">
                                                 <span class="user-name"><?php echo htmlspecialchars($user['username']); ?></span>
                                                 <span class="user-email"><?php echo htmlspecialchars($user['email']); ?></span>
+                                                <span class="user-role-badge user-role-badge--<?php echo $user['role']; ?>"><?php echo htmlspecialchars($user['role']); ?></span>
                                             </div>
                                         </div>
                                     </td>
@@ -187,6 +207,17 @@ $total_users = count($users);
                                             <button class="action-btn btn-edit" onclick="alert('Edit funkcionalitāte tiks pievienota drīzumā')">
                                                 <i class="fa-solid fa-pencil"></i> Rediģēt
                                             </button>
+                                            <form method="POST" style="display: inline;">
+                                                <input type="hidden" name="action" value="toggle_role">
+                                                <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
+                                                <button type="submit" class="action-btn <?php echo $user['role'] === 'administrator' ? 'btn-revoke' : 'btn-promote'; ?>">
+                                                    <?php if ($user['role'] === 'administrator'): ?>
+                                                        <i class="fa-solid fa-shield-halved"></i> Atsaukt
+                                                    <?php else: ?>
+                                                        <i class="fa-solid fa-shield-halved"></i> Administrators
+                                                    <?php endif; ?>
+                                                </button>
+                                            </form>
                                             <form method="POST" style="display: inline;" onsubmit="return confirm('Vai tiešām vēlaties dzēst šo lietotāju?')">
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">

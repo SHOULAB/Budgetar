@@ -2,8 +2,8 @@
 session_start();
 require_once('../../assets/database.php');
 
-if (!isset($_SESSION['admin_id']) || !isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
-    header("Location: login.php");
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'administrator') {
+    header("Location: ../../user/php/login.php");
     exit();
 }
 
@@ -61,7 +61,7 @@ $system_info = [
             </nav>
 
             <div style="margin-top: auto;">
-                <a href="logout.php" class="admin-nav-item" style="color: var(--danger);">
+                <a href="../../user/php/calendar.php" class="admin-nav-item" style="color: var(--text-secondary);">
                     <span class="admin-nav-icon"><i class="fa-solid fa-door-closed"></i></span>
                     <span>Iziet</span>
                 </a>
@@ -73,7 +73,7 @@ $system_info = [
                 <h1 class="admin-title">Dashboard</h1>
                 <div class="admin-user">
                     <span><i class="fa-solid fa-user-tie"></i></span>
-                    <span><?php echo htmlspecialchars($_SESSION['admin_username'] ?? 'Admin'); ?></span>
+                    <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'Admin'); ?></span>
                 </div>
             </div>
 

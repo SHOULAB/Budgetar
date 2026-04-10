@@ -483,6 +483,44 @@ body {
     background: rgba(239, 68, 68, 0.3);
 }
 
+.btn-promote {
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+}
+
+.btn-promote:hover {
+    background: rgba(139, 92, 246, 0.28);
+}
+
+.btn-revoke {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+}
+
+.btn-revoke:hover {
+    background: rgba(245, 158, 11, 0.28);
+}
+
+.user-role-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 99px;
+    display: inline-block;
+    margin-top: 2px;
+    text-transform: capitalize;
+}
+
+.user-role-badge--user {
+    background: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+}
+
+.user-role-badge--administrator {
+    background: rgba(139, 92, 246, 0.18);
+    color: #a78bfa;
+}
+
 /* Empty State */
 .empty-state {
     padding: 60px 24px;
