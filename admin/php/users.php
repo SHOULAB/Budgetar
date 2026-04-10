@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // search bar
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-$query = "SELECT id, username, email, role, created_at FROM BU_users WHERE 1=1";
+$query = "SELECT id, username, email, role, created_at, last_login FROM BU_users WHERE 1=1";
 $params = [];
 $types = "";
 
@@ -152,6 +152,7 @@ $total_users = count($users);
                             <tr>
                                 <th>Lietotājs</th>
                                 <th>Reģistrācijas datums</th>
+                                <th>Pēdējā pieslēgšanās</th>
                                 <th>Darbības</th>
                             </tr>
                         </thead>
@@ -166,32 +167,21 @@ $total_users = count($users);
                                             <div class="user-details">
                                                 <span class="user-name"><?php echo htmlspecialchars($user['username']); ?></span>
                                                 <span class="user-email"><?php echo htmlspecialchars($user['email']); ?></span>
-                                                <span class="user-role-badge user-role-badge--<?php echo $user['role']; ?>"><?php echo htmlspecialchars($user['role']); ?></span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td><?php echo date('d.m.Y H:i', strtotime($user['created_at'])); ?></td>
+                                    <td class="td-muted"><?php echo date('d.m.Y H:i', strtotime($user['created_at'])); ?></td>
+                                    <td class="td-muted"><?php echo $user['last_login'] ? date('d.m.Y H:i', strtotime($user['last_login'])) : '—'; ?></td>
                                     <td>
                                         <div class="action-buttons">
-                                            <button class="action-btn btn-edit" onclick="alert('Edit funkcionalitāte tiks pievienota drīzumā')">
-                                                <i class="fa-solid fa-pencil"></i> Rediģēt
+                                            <button class="tbl-btn tbl-btn--edit" onclick="alert('Edit funkcionalitāte tiks pievienota drīzumā')" title="Rediģēt">
+                                                <i class="fa-solid fa-pencil"></i>
                                             </button>
-                                            <form method="POST" style="display: inline;">
-                                                <input type="hidden" name="action" value="toggle_role">
-                                                <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
-                                                <button type="submit" class="action-btn <?php echo $user['role'] === 'administrator' ? 'btn-revoke' : 'btn-promote'; ?>">
-                                                    <?php if ($user['role'] === 'administrator'): ?>
-                                                        <i class="fa-solid fa-shield-halved"></i> Atsaukt
-                                                    <?php else: ?>
-                                                        <i class="fa-solid fa-shield-halved"></i> Administrators
-                                                    <?php endif; ?>
-                                                </button>
-                                            </form>
                                             <form method="POST" style="display: inline;" onsubmit="return confirm('Vai tiešām vēlaties dzēst šo lietotāju?')">
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
-                                                <button type="submit" class="action-btn btn-delete">
-                                                    <i class="fa-solid fa-trash"></i> Dzēst
+                                                <button type="submit" class="tbl-btn tbl-btn--delete" title="Dzēst">
+                                                    <i class="fa-solid fa-trash"></i>
                                                 </button>
                                             </form>
                                         </div>

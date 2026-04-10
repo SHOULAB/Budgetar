@@ -534,55 +534,51 @@ body {
     color: var(--text-secondary);
 }
 
+.td-muted {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
 .action-buttons {
     display: flex;
-    gap: 8px;
+    gap: 6px;
 }
 
-.action-btn {
-    padding: 8px 12px;
-    border-radius: 6px;
-    border: none;
+.tbl-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid transparent;
     cursor: pointer;
     font-size: 14px;
-    transition: all 0.3s ease;
-    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
 }
 
-.btn-edit {
-    background: rgba(20, 184, 166, 0.15);
+.tbl-btn--edit {
+    background: rgba(20, 184, 166, 0.1);
+    border-color: rgba(20, 184, 166, 0.2);
     color: var(--primary);
 }
 
-.btn-edit:hover {
-    background: rgba(20, 184, 166, 0.25);
+.tbl-btn--edit:hover {
+    background: rgba(20, 184, 166, 0.22);
+    border-color: var(--primary);
+    transform: translateY(-1px);
 }
 
-.btn-delete {
-    background: rgba(239, 68, 68, 0.2);
+.tbl-btn--delete {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
     color: var(--danger);
 }
 
-.btn-delete:hover {
-    background: rgba(239, 68, 68, 0.3);
-}
-
-.btn-promote {
-    background: rgba(139, 92, 246, 0.15);
-    color: #a78bfa;
-}
-
-.btn-promote:hover {
-    background: rgba(139, 92, 246, 0.28);
-}
-
-.btn-revoke {
-    background: rgba(245, 158, 11, 0.15);
-    color: #fbbf24;
-}
-
-.btn-revoke:hover {
-    background: rgba(245, 158, 11, 0.28);
+.tbl-btn--delete:hover {
+    background: rgba(239, 68, 68, 0.22);
+    border-color: var(--danger);
+    transform: translateY(-1px);
 }
 
 .user-role-badge {

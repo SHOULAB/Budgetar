@@ -46,6 +46,10 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
             $_SESSION['email']    = $user['email'];
             $_SESSION['role']     = $user['role'] ?? 'user';
 
+            // Update last login
+            $ll = mysqli_prepare($savienojums, "UPDATE BU_users SET last_login = NOW() WHERE id = ?");
+            if ($ll) { mysqli_stmt_bind_param($ll, "i", $user['id']); mysqli_stmt_execute($ll); mysqli_stmt_close($ll); }
+
             // Fetch user theme setting
             $theme_stmt = mysqli_prepare($savienojums, "SELECT setting_value FROM BU_user_settings WHERE user_id = ? AND setting_key = 'theme'");
             if ($theme_stmt) {
@@ -101,6 +105,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['username'] = $username;
                     $_SESSION['email']    = $user_email;
                     $_SESSION['role']     = $user_role ?? 'user';
+
+                    // Update last login
+                    $ll = mysqli_prepare($savienojums, "UPDATE BU_users SET last_login = NOW() WHERE id = ?");
+                    if ($ll) { mysqli_stmt_bind_param($ll, "i", $user_id); mysqli_stmt_execute($ll); mysqli_stmt_close($ll); }
 
                     // Fetch user theme setting
                     $theme_stmt = mysqli_prepare($savienojums, "SELECT setting_value FROM BU_user_settings WHERE user_id = ? AND setting_key = 'theme'");
