@@ -13,10 +13,15 @@
 
     "dashboard.page.title":       "Admin Dashboard",
     "dashboard.stat.total.users": "Kopā lietotāji",
-    "dashboard.stat.active":      "Aktīvi lietotāji",
+    "dashboard.stat.total.budget": "Kopējie budžēti",
     "dashboard.stat.tx":          "Transakcijas",
+    "dashboard.stat.tx.month":    "Transakcijas šomezon",
     "dashboard.stat.status":      "Sistēmas statuss",
     "dashboard.stat.status.val":  "Online",
+
+    "dashboard.recent.registered": "Jaunākie lietotāji",
+    "dashboard.recent.logins":     "Pēdējās pieslēgšanās",
+    "dashboard.recent.empty":      "Nav datu",
 
     "~~~ users.php ~~~": "",
 
@@ -151,10 +156,15 @@
 
     "dashboard.page.title":       "Admin Dashboard",
     "dashboard.stat.total.users": "Total users",
-    "dashboard.stat.active":      "Active users",
+    "dashboard.stat.total.budget": "Total budgets",
     "dashboard.stat.tx":          "Transactions",
+    "dashboard.stat.tx.month":    "Transactions this month",
     "dashboard.stat.status":      "System status",
     "dashboard.stat.status.val":  "Online",
+
+    "dashboard.recent.registered": "Recently registered",
+    "dashboard.recent.logins":     "Recent logins",
+    "dashboard.recent.empty":      "No data",
 
     "~~~ users.php ~~~": "",
 
