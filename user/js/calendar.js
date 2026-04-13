@@ -34,6 +34,8 @@ function setTransactionType(type) {
     const submitBtn  = document.getElementById('transactionSubmitBtn');
     const recurringLabel = document.getElementById('recurringLabel');
     const modalTitle = document.getElementById('transactionModalTitle');
+    const ignoreBudgetGroup = document.getElementById('ignoreBudgetGroup');
+    const ignoreBudgetCheck = document.getElementById('ignoreBudgetCheck');
 
     if (type === 'income') {
         incomeBtn.classList.add('active');
@@ -42,6 +44,8 @@ function setTransactionType(type) {
         submitBtn.className = 'btn btn-success btn-full';
         recurringLabel.textContent = calendarStrings.recurIncome;
         modalTitle.textContent = calendarStrings.addIncome;
+        if (ignoreBudgetGroup) ignoreBudgetGroup.style.display = 'none';
+        if (ignoreBudgetCheck) ignoreBudgetCheck.checked = false;
     } else {
         expenseBtn.classList.add('active');
         incomeBtn.classList.remove('active');
@@ -49,6 +53,7 @@ function setTransactionType(type) {
         submitBtn.className = 'btn btn-danger btn-full';
         recurringLabel.textContent = calendarStrings.recurExpense;
         modalTitle.textContent = calendarStrings.addExpense;
+        if (ignoreBudgetGroup) ignoreBudgetGroup.style.display = '';
     }
 }
 
@@ -76,6 +81,8 @@ function openDayModal(day, month, year) {
             const sign      = transaction.type === 'income' ? '+' : '-';
             const recurringBadge = transaction.is_recurring_display
                 ? `<span class="recurring-badge"><i class="fa-solid fa-rotate"></i> ${calendarStrings.badgeMonthly}</span>` : '';
+            const ignoreBudgetBadge = (transaction.ignore_budget == 1 && transaction.type === 'expense')
+                ? `<span class="ignore-budget-badge"><i class="fa-solid fa-eye-slash"></i> ${calendarStrings.badgeIgnoreBudget}</span>` : '';
             const recurringInfo = transaction.is_recurring_display
                 ? '<div class="transaction-note"></div>'
                 : '';
@@ -88,7 +95,7 @@ function openDayModal(day, month, year) {
             html += `
                 <div class="transaction-item ${typeClass}">
                     <div class="transaction-info">
-                        <div class="transaction-description">${transaction.description} ${recurringBadge}</div>
+                        <div class="transaction-description">${transaction.description} ${recurringBadge}${ignoreBudgetBadge}</div>
                         <div class="transaction-type">${typeLabel}</div>
                         ${recurringInfo}
                     </div>
@@ -180,6 +187,8 @@ function handleDeleteClick(transactionId) {
         const formData = new FormData();
         formData.append('delete_transaction', '1');
         formData.append('transaction_id', transactionId);
+        formData.append('view_month', currentMonth);
+        formData.append('view_year', currentYear);
 
         fetch('calendar.php', {
             method: 'POST',
@@ -456,19 +465,24 @@ function handleTransactionFormSubmit(e) {
         // Run expense-specific validation before submitting
         const typeField = document.getElementById('transaction_type');
         if (typeField && typeField.value === 'expense') {
+            const ignoreBudget = document.getElementById('ignoreBudgetCheck');
             const expenseAmount = parseFloat(document.getElementById('transaction_amount').value) || 0;
             const expenseDate   = document.getElementById('transaction_date').value;
 
             const newTotalExpense = monthlyExpense + expenseAmount;
             if (monthlyIncome > 0 && newTotalExpense > monthlyIncome) {
+                closeTransactionModal();
                 showWarningModal(expenseAmount, newTotalExpense);
                 return;
             }
 
-            const breachedBudgets = getBudgetBreaches(expenseDate, expenseAmount);
-            if (breachedBudgets.length > 0) {
-                showBudgetWarningModal(expenseAmount, expenseDate, breachedBudgets);
-                return;
+            if (!(ignoreBudget && ignoreBudget.checked)) {
+                const breachedBudgets = getBudgetBreaches(expenseDate, expenseAmount);
+                if (breachedBudgets.length > 0) {
+                    closeTransactionModal();
+                    showBudgetWarningModal(expenseAmount, expenseDate, breachedBudgets);
+                    return;
+                }
             }
         }
 

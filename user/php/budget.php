@@ -353,11 +353,29 @@ $budgets_result = mysqli_stmt_get_result($stmt);
 $budgets = [];
 if ($budgets_result) {
     while ($row = mysqli_fetch_assoc($budgets_result)) {
-        $spent_stmt = mysqli_prepare($savienojums,
-            "SELECT SUM(amount) as total FROM BU_transactions
-             WHERE user_id = ? AND type = 'expense'
-             AND date BETWEEN ? AND ?");
-        mysqli_stmt_bind_param($spent_stmt, "iss", $user_id, $row['start_date'], $row['end_date']);
+        $recurring_days_csv = $row['recurring_days'] ?? '';
+        if ($recurring_days_csv !== '') {
+            // Only count expenses on the budget's configured weekdays
+            $js_days   = array_filter(array_map('intval', explode(',', $recurring_days_csv)), fn($d) => $d >= 0 && $d <= 6);
+            $mysql_days = array_values(array_map(fn($d) => $d + 1, $js_days));
+            $placeholders = implode(',', array_fill(0, count($mysql_days), '?'));
+            $spent_stmt = mysqli_prepare($savienojums,
+                "SELECT SUM(amount) as total FROM BU_transactions
+                 WHERE user_id = ? AND type = 'expense'
+                 AND date BETWEEN ? AND ?
+                 AND ignore_budget = 0
+                 AND DAYOFWEEK(date) IN ({$placeholders})");
+            $types = 'iss' . str_repeat('i', count($mysql_days));
+            $bind_args = array_merge([$user_id, $row['start_date'], $row['end_date']], $mysql_days);
+            mysqli_stmt_bind_param($spent_stmt, $types, ...$bind_args);
+        } else {
+            $spent_stmt = mysqli_prepare($savienojums,
+                "SELECT SUM(amount) as total FROM BU_transactions
+                 WHERE user_id = ? AND type = 'expense'
+                 AND date BETWEEN ? AND ?
+                 AND ignore_budget = 0");
+            mysqli_stmt_bind_param($spent_stmt, "iss", $user_id, $row['start_date'], $row['end_date']);
+        }
         mysqli_stmt_execute($spent_stmt);
         $spent_row = mysqli_fetch_assoc(mysqli_stmt_get_result($spent_stmt));
         mysqli_stmt_close($spent_stmt);
@@ -410,7 +428,7 @@ $total_remaining = $total_budget_amount - $total_spent;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Budžeti - Budgetar</title>
+    <title>Budgetar</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/budget.css">

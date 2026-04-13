@@ -195,10 +195,12 @@
 
 /* ── Day-picker pill row ─────────────────────────────────────────────────── */
 
-.day-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+.day-picker { display: flex; gap: 8px; flex-wrap: nowrap; }
 
 .day-pill {
-    padding: 8px 14px;
+    flex: 1;
+    padding: 8px 0;
+    text-align: center;
     border-radius: 20px;
     border: 1px solid var(--border);
     background: rgba(255, 255, 255, 0.05);

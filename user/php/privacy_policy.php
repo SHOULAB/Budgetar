@@ -44,7 +44,7 @@ $_traw_settings = json_decode(file_get_contents(__DIR__ . '/translate.json'), tr
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privātuma politika - Budgetar</title>
+    <title>Budgetar</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/settings.css">

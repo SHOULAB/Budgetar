@@ -1,55 +1,68 @@
-# Exam-project Budgetar
+# Budgetar
 
+Personal finance web application for tracking income and expenses, planning budgets, and reviewing statistics in a clear calendar-based interface.
+
+Live demo:
 https://kristovskis.lv/4pt/janeks/Budgetar/user/php/
 
 ---
 
-## 📋 Par projektu
+## About The Project
 
-**Budgetar** ir tīmekļa lietotne personīgo finanšu pārvaldībai. Sistēma ļauj lietotājiem sekot līdzi saviem ienākumiem un izdevumiem, veidot budžeta plānus un analizēt finanšu tendences grafiskā veidā.
+Budgetar was developed as a final exam project at Liepaja State Technical School in 2026.
 
-Projekts izstrādāts kā gala eksāmena darbs **Liepājas Valsts tehnikumā**, 2026. gadā.
+- Author: Dagnis Janeks
+- Supervisor: Raimonds Kristovskis
 
-**Autors:** Dagnis Janeks  
-**Vadītājs:** Raimonds Kristovskis
+The system helps users:
 
----
-
-<div align="center">
-
-### Sākumlapa
-<!-- Ievieto šeit sākumlapas ekrānuzņēmumu -->
-![Main Menu](https://i.imgur.com/Z5Dodx1.png)
-
-### Kalendāra skats
-<!-- Ievieto šeit kalendāra ekrānuzņēmumu -->
-![Calendar](https://i.imgur.com/nn9QKOX.png)
-
-### Finanšu pārskati
-<!-- Ievieto šeit pārskatu lapas ekrānuzņēmumu -->
-![Reports](https://i.imgur.com/P5vClc3.png)
-
-### Budžeta pārvaldība
-<!-- Ievieto šeit budžeta lapas ekrānuzņēmumu -->
-![Budget](https://i.imgur.com/39v5zhE.png)
-
-</div>
+- Record income and expenses quickly
+- Manage recurring monthly transactions
+- Build and monitor monthly budgets
+- View financial trends in charts and summaries
+- Use the app comfortably on desktop and mobile devices
 
 ---
 
-## ✨ Funkcionalitāte
+## Screenshots
 
-- 🔐 **Lietotāju autentifikācija** — reģistrācija, pieteikšanās, "atcerēties mani"
-- 📅 **Kalendāra skats** — visi ieraksti vizuāli sakārtoti pa dienām
-- ➕ **Transakciju pārvaldība** — ienākumu un izdevumu pievienošana, dzēšana
-- 🔄 **Atkārtoti maksājumi** — automātiski ikmēneša ieraksti
-- 💼 **Budžeta plānošana** — budžetu izveide ar brīdinājuma slieksni
-- 📊 **Detalizēti pārskati** — 5 dažādi grafiki ar 12 mēnešu analīzi
-- 📱 **Responsīvs dizains** — pilnībā pieejams mobilajās ierīcēs
+### Main Page
+![Main Page](https://imgur.com/nfv87ug)
+
+### Calendar Page
+![Calendar Page](https://imgur.com/6laj3JR)
+
+### Statistics Page
+![Statistics Page](https://imgur.com/EownHGj)
+
+### Settings Page
+![Settings Page](https://imgur.com/GkzJx7W)
 
 ---
 
-## 📄 Licence
+## Core Features
 
-Šis projekts izstrādāts izglītības nolūkiem Liepājas Valsts tehnikumā.  
+- User authentication (register, login, remember me)
+- Calendar-based transaction overview
+- Add and delete income/expense records
+- Recurring monthly transactions
+- Budget planning with warning thresholds
+- Statistics dashboard with chart-based analysis
+- Responsive interface for phones, tablets, and desktops
+
+---
+
+## Tech Stack
+
+- PHP (server-side logic)
+- MySQL / MariaDB (database)
+- JavaScript (frontend interactions)
+- HTML5 + CSS3 (UI)
+
+---
+
+## License
+
+This project was created for educational purposes at Liepaja State Technical School.
+
 © 2026 Dagnis Janeks

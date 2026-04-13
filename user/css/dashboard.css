@@ -349,6 +349,18 @@
     vertical-align: middle;
 }
 
+.ignore-budget-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+    color: white;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
 /* ── Warning modal (income-exceed) ──────────────────────────────────────── */
 
 .warning-modal-content { max-width: 500px; }

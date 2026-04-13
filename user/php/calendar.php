@@ -92,6 +92,12 @@ function ensureRecurringStopDateColumn($conn) {
 
 $hasRecurringStopDateColumn = ensureRecurringStopDateColumn($savienojums);
 
+// Ensure ignore_budget column exists
+$_igCheck = mysqli_query($savienojums, "SHOW COLUMNS FROM BU_transactions LIKE 'ignore_budget'");
+if (!$_igCheck || mysqli_num_rows($_igCheck) === 0) {
+    mysqli_query($savienojums, "ALTER TABLE BU_transactions ADD COLUMN ignore_budget TINYINT(1) NOT NULL DEFAULT 0");
+}
+
 // Combined transaction submit
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_transaction'])) {
     $date = $_POST['transaction_date'];
@@ -99,11 +105,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_transaction'])) {
     $description = trim($_POST['transaction_description']);
     $type = (isset($_POST['transaction_type']) && $_POST['transaction_type'] === 'expense') ? 'expense' : 'income';
     $is_recurring = isset($_POST['is_recurring_transaction']) ? 1 : 0;
+    $ignore_budget = ($type === 'expense' && isset($_POST['ignore_budget'])) ? 1 : 0;
 
     if (!empty($date) && $amount > 0) {
-        $stmt = mysqli_prepare($savienojums, "INSERT INTO BU_transactions (user_id, date, amount, type, description, is_recurring) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = mysqli_prepare($savienojums, "INSERT INTO BU_transactions (user_id, date, amount, type, description, is_recurring, ignore_budget) VALUES (?, ?, ?, ?, ?, ?, ?)");
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, "isdssi", $user_id, $date, $amount, $type, $description, $is_recurring);
+            mysqli_stmt_bind_param($stmt, "isdssii", $user_id, $date, $amount, $type, $description, $is_recurring, $ignore_budget);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
 
@@ -176,6 +183,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_expense'])) {
 // Delete transaction
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_transaction'])) {
     $transaction_id = intval($_POST['transaction_id']);
+
+    // Use viewed month/year from POST (sent by JS), fall back to GET or current date
+    $view_month = isset($_POST['view_month']) ? intval($_POST['view_month']) : $current_month;
+    $view_year  = isset($_POST['view_year'])  ? intval($_POST['view_year'])  : $current_year;
     
     $stmt = mysqli_prepare($savienojums, "SELECT date, is_recurring FROM BU_transactions WHERE id = ? AND user_id = ?");
     $shouldDelete = true;
@@ -187,7 +198,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_transaction'])
         mysqli_stmt_close($stmt);
 
         if ($row && intval($row['is_recurring']) === 1) {
-            $month_first = sprintf('%04d-%02d-01', $current_year, $current_month);
+            $month_first = sprintf('%04d-%02d-01', $view_year, $view_month);
             $stop_date = date('Y-m-d', strtotime("$month_first -1 day"));
             if ($row['date'] < $month_first && $hasRecurringStopDateColumn) {
                 $ustmt = mysqli_prepare($savienojums, "UPDATE BU_transactions SET recurring_stop_date = ? WHERE id = ? AND user_id = ?");
@@ -227,7 +238,7 @@ $first_day = "$current_year-$current_month-01";
 $last_day = date("Y-m-t", strtotime($first_day));
 
 // Get regular transactions for this month
-$stmt = mysqli_prepare($savienojums, "SELECT id, date, amount, type, description, is_recurring FROM BU_transactions WHERE user_id = ? AND date BETWEEN ? AND ? ORDER BY date ASC");
+$stmt = mysqli_prepare($savienojums, "SELECT id, date, amount, type, description, is_recurring, ignore_budget FROM BU_transactions WHERE user_id = ? AND date BETWEEN ? AND ? ORDER BY date ASC");
 mysqli_stmt_bind_param($stmt, "iss", $user_id, $first_day, $last_day);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
@@ -238,12 +249,15 @@ while ($row = mysqli_fetch_assoc($result)) {
     if (!isset($transactions[$day])) {
         $transactions[$day] = [];
     }
+    if ($row['is_recurring']) {
+        $row['is_recurring_display'] = true;
+    }
     $transactions[$day][] = $row;
 }
 mysqli_stmt_close($stmt);
 
 // Get recurring transactions from previous months and add them to current month
-$recurringQuery = "SELECT id, date, amount, type, description FROM BU_transactions WHERE user_id = ? AND is_recurring = 1 AND date < ?";
+$recurringQuery = "SELECT id, date, amount, type, description, ignore_budget FROM BU_transactions WHERE user_id = ? AND is_recurring = 1 AND date < ?";
 if ($hasRecurringStopDateColumn) {
     $recurringQuery .= " AND (recurring_stop_date IS NULL OR recurring_stop_date >= ?)";
 }
@@ -359,7 +373,8 @@ if ($budgets_table_ready) {
                  FROM   BU_transactions
                  WHERE  user_id = ? AND type = 'expense'
                    AND  date BETWEEN ? AND ?
-                   AND  DAYOFWEEK(date) IN ({$placeholders})");
+                   AND  DAYOFWEEK(date) IN ({$placeholders})
+                   AND  ignore_budget = 0");
             $types = 'iss' . str_repeat('i', count($mysql_days));
             $bind_args = array_merge([$user_id, $brow['start_date'], $brow['end_date']], $mysql_days);
             mysqli_stmt_bind_param($sstmt, $types, ...$bind_args);
@@ -368,7 +383,8 @@ if ($budgets_table_ready) {
                 "SELECT COALESCE(SUM(amount), 0) AS spent
                  FROM   BU_transactions
                  WHERE  user_id = ? AND type = 'expense'
-                   AND  date BETWEEN ? AND ?");
+                   AND  date BETWEEN ? AND ?
+                   AND  ignore_budget = 0");
             mysqli_stmt_bind_param($sstmt, "iss",
                 $user_id, $brow['start_date'], $brow['end_date']);
         }
@@ -434,7 +450,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalendārs - Budgetar</title>
+    <title>Budgetar</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/calendar.css">
@@ -608,6 +624,13 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                     </label>
                 </div>
 
+                <div class="form-group" id="ignoreBudgetGroup" style="display:none;">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="ignore_budget" class="checkbox-input" id="ignoreBudgetCheck">
+                        <span data-i18n="cal.modal.ignore.budget">Neņemt vērā budžetā</span>
+                    </label>
+                </div>
+
                 <button type="submit" class="btn btn-success btn-full" id="transactionSubmitBtn" data-i18n="cal.modal.add.income">
                     Pievienot ienākumu
                 </button>
@@ -643,6 +666,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
             'typeIncome'      => $_t['cal.type.income']             ?? 'Ienākums',
             'typeExpense'     => $_t['cal.type.expense']            ?? 'Izdevums',
             'badgeMonthly'    => $_t['cal.badge.monthly']           ?? 'Ikmēneša',
+            'badgeIgnoreBudget' => $_t['cal.badge.ignore.budget'] ?? 'Ārpus budžeta',
             'deleteTitle'     => $_t['cal.delete.title']            ?? 'Apstiprināt dzēšanu',
             'deleteMessage'   => $_t['cal.delete.message']          ?? 'Vai tiešām vēlies dzēst šo ierakstu? Šī darbība nevar tikt atsaukta.',
             'deleteCancel'    => $_t['cal.delete.cancel']           ?? 'Atcelt',
