@@ -368,7 +368,8 @@ if ($stmt) {
     }
     mysqli_stmt_close($stmt);
 }
-$_traw_settings = json_decode(file_get_contents(__DIR__ . '/../../user/php/translate.json'), true) ?? [];
+$_traw_settings = json_decode(file_get_contents(__DIR__ . '/translate.json'), true) ?? [];
+$_t             = $_traw_settings[$current_language] ?? $_traw_settings['lv'] ?? [];
 
 $stmt = mysqli_prepare($savienojums, "SELECT email FROM BU_users WHERE id = ?");
 if ($stmt) {

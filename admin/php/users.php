@@ -7,6 +7,11 @@ if (!isset($_SESSION['user_id']) || !in_array(strtolower($_SESSION['role'] ?? ''
     exit();
 }
 
+// ── Load language + translations ──────────────────────────────────────────────
+$_lang = $_SESSION['language'] ?? 'lv';
+$_traw = json_decode(file_get_contents(__DIR__ . '/translate.json'), true) ?? [];
+$_t    = $_traw[$_lang] ?? $_traw['lv'] ?? [];
+
 $success = '';
 $error = '';
 $is_ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
@@ -19,15 +24,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($action === 'deactivate') {
             if (isset($_SESSION['user_id']) && $user_id == $_SESSION['user_id']) {
-                $error = 'Jūs nevarat deāktivēt savu kontu!';
+                $error = $_t['users.err.self.deactivate'] ?? 'Jūs nevarat deāktivēt savu kontu!';
             } else {
                 $stmt = mysqli_prepare($savienojums, "UPDATE BU_users SET is_active = 0 WHERE id = ?");
                 mysqli_stmt_bind_param($stmt, "i", $user_id);
 
                 if (mysqli_stmt_execute($stmt)) {
-                    $success = 'Lietotājs veiksmīgi deāktivēts!';
+                    $success = $_t['users.msg.deactivated'] ?? 'Lietotājs veiksmīgi deāktivēts!';
                 } else {
-                    $error = 'Kļūda deāktivējot lietotāju!';
+                    $error = $_t['users.err.self.deactivate'] ?? 'Kļūda deāktivējot lietotāju!';
                 }
                 mysqli_stmt_close($stmt);
             }
@@ -37,9 +42,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = mysqli_prepare($savienojums, "UPDATE BU_users SET is_active = 1 WHERE id = ?");
             mysqli_stmt_bind_param($stmt, "i", $user_id);
             if (mysqli_stmt_execute($stmt)) {
-                $success = 'Lietotājs veiksmīgi aktivēts!';
+                $success = $_t['users.msg.activated'] ?? 'Lietotājs veiksmīgi aktivēts!';
             } else {
-                $error = 'Kļūda aktivējot lietotāju!';
+                $error = $_t['users.err.self.deactivate'] ?? 'Kļūda aktivējot lietotāju!';
             }
             mysqli_stmt_close($stmt);
         }
@@ -51,11 +56,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $allowed_roles = ['user', 'moderator', 'administrator'];
 
             if (empty($new_username) || empty($new_email)) {
-                $error = 'Lietotājvārds un e-pasts nedrīkst būt tukši!';
+                $error = $_t['users.err.empty.fields'] ?? 'Lietotājvārds un e-pasts nedrīkst būt tukši!';
             } elseif (!filter_var($new_email, FILTER_VALIDATE_EMAIL)) {
-                $error = 'Nederīgs e-pasta formāts!';
+                $error = $_t['users.err.invalid.email'] ?? 'Nerīdīgs e-pasta formāts!';
             } elseif (!in_array($new_role, $allowed_roles)) {
-                $error = 'Nederīga loma!';
+                $error = $_t['users.err.invalid.role'] ?? 'Nerīdīga loma!';
             } else {
                 // Check email uniqueness (exclude current user)
                 $chk = mysqli_prepare($savienojums, "SELECT id FROM BU_users WHERE email = ? AND id != ?");
@@ -66,14 +71,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mysqli_stmt_close($chk);
 
                 if ($email_taken) {
-                    $error = 'Šis e-pasts jau tiek izmantots!';
+                    $error = $_t['users.err.email.taken'] ?? 'Šis e-pasts jau tiek izmantots!';
                 } else {
                     $stmt = mysqli_prepare($savienojums, "UPDATE BU_users SET username = ?, email = ?, role = ? WHERE id = ?");
                     mysqli_stmt_bind_param($stmt, "sssi", $new_username, $new_email, $new_role, $user_id);
                     if (mysqli_stmt_execute($stmt)) {
-                        $success = 'Lietotāja dati veiksmīgi atjaunināti!';
+                        $success = $_t['users.msg.updated'] ?? 'Lietotāja dati veiksmīgi atjaunināti!';
                     } else {
-                        $error = 'Kļūda atjauninot lietotāja datus!';
+                        $error = $_t['users.err.empty.fields'] ?? 'Kļūda atjauninot lietotāja datus!';
                     }
                     mysqli_stmt_close($stmt);
                 }
@@ -82,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($action === 'delete') {
             if (isset($_SESSION['user_id']) && $user_id == $_SESSION['user_id']) {
-                $error = 'Jūs nevarat dzēst savu kontu!';
+                $error = $_t['users.err.self.delete'] ?? 'Jūs nevarat dzēst savu kontu!';
             } else {
                 // Only allow deleting deactivated accounts
                 $chk = mysqli_prepare($savienojums, "SELECT is_active FROM BU_users WHERE id = ?");
@@ -93,14 +98,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mysqli_stmt_close($chk);
 
                 if (!$chk_row || $chk_row['is_active']) {
-                    $error = 'Var dzēst tikai deāktivētus kontus!';
+                    $error = $_t['users.err.active.delete'] ?? 'Var dzēst tikai deāktivētus kontus!';
                 } else {
                     $stmt = mysqli_prepare($savienojums, "DELETE FROM BU_users WHERE id = ? AND is_active = 0");
                     mysqli_stmt_bind_param($stmt, "i", $user_id);
                     if (mysqli_stmt_execute($stmt)) {
-                        $success = 'Lietotājs veiksmīgi dzēsts!';
+                        $success = $_t['users.msg.deleted'] ?? 'Lietotājs veiksmīgi dzēsts!';
                     } else {
-                        $error = 'Kļūda dzēšot lietotāju!';
+                        $error = $_t['users.err.self.delete'] ?? 'Kļūda dzēšot lietotāju!';
                     }
                     mysqli_stmt_close($stmt);
                 }
@@ -119,7 +124,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = mysqli_prepare($savienojums, "UPDATE BU_users SET role = ? WHERE id = ?");
             mysqli_stmt_bind_param($stmt, "si", $new_role, $user_id);
             if (mysqli_stmt_execute($stmt)) {
-                $success = $new_role === 'administrator' ? 'Lietotājs veiksmīgi iecelts par administratoru!' : 'Administratora tiesības veiksmīgi atsauktas!';
+                $success = $new_role === 'administrator'
+                    ? ($_t['users.msg.promoted'] ?? 'Lietotājs veiksmīgi iecelts par administratoru!')
+                    : ($_t['users.msg.demoted']  ?? 'Administratora tiesības veiksmīgi atsauktas!');
             } else {
                 $error = 'Kļūda mainīot lomās!';
             }
@@ -174,7 +181,7 @@ $total_users = count($users);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lietotāju pārvaldība - Budgetar</title>
+    <title><?php echo htmlspecialchars($_t['users.page.title'] ?? 'Lietotāju pārvaldība'); ?> - Budgetar</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="icon" href="../../assets/image/logo.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
@@ -185,7 +192,7 @@ $total_users = count($users);
 
         <main class="admin-content">
             <div class="admin-header">
-                <h1 class="admin-title">Lietotāju pārvaldība</h1>
+                <h1 class="admin-title" data-i18n="users.page.title"><?php echo $_t['users.page.title'] ?? 'Lietotāju pārvaldība'; ?></h1>
             </div>
 
             <?php if ($error): ?>
@@ -208,7 +215,7 @@ $total_users = count($users);
                             type="text"
                             name="search"
                             class="search-input"
-                            placeholder="Meklēt lietotājus..."
+                            placeholder="<?php echo htmlspecialchars($_t['users.search.placeholder'] ?? 'Meklēt lietotājus...'); ?>"
                             value="<?php echo htmlspecialchars($search); ?>"
                         >
                     </form>
@@ -217,24 +224,24 @@ $total_users = count($users);
 
             <div class="users-table-container">
                 <div class="table-header">
-                    <h2 class="table-title">Lietotāji</h2>
-                    <span class="table-count"><?php echo $total_users; ?> rezultāti</span>
+                    <h2 class="table-title" data-i18n="users.table.title"><?php echo $_t['users.table.title'] ?? 'Lietotāji'; ?></h2>
+                    <span class="table-count"><?php echo $total_users; ?> <?php echo $_t['users.table.results'] ?? 'rezultāti'; ?></span>
                 </div>
 
                 <?php if (empty($users)): ?>
                     <div class="empty-state">
                         <div class="empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
-                        <div class="empty-text">Nav atrasti lietotāji</div>
-                        <div class="empty-subtext">Mēģiniet mainīt meklēšanas kritērijus</div>
+                        <div class="empty-text" data-i18n="users.empty.text"><?php echo $_t['users.empty.text'] ?? 'Nav atrasti lietotāji'; ?></div>
+                        <div class="empty-subtext" data-i18n="users.empty.subtext"><?php echo $_t['users.empty.subtext'] ?? 'Mēġiniet mainīt meklēšanas kritērijus'; ?></div>
                     </div>
                 <?php else: ?>
                     <table class="users-table">
                         <thead>
                             <tr>
-                                <th>Lietotājs</th>
-                                <th>Reģistrācijas datums</th>
-                                <th>Pēdējā pieslēgšanās</th>
-                                <th>Darbības</th>
+                                <th data-i18n="users.table.col.user"><?php echo $_t['users.table.col.user'] ?? 'Lietotājs'; ?></th>
+                                <th data-i18n="users.table.col.created"><?php echo $_t['users.table.col.created'] ?? 'Reģistrācijas datums'; ?></th>
+                                <th data-i18n="users.table.col.last.login"><?php echo $_t['users.table.col.last.login'] ?? 'Pēdējā pieslēgšanās'; ?></th>
+                                <th data-i18n="users.table.col.actions"><?php echo $_t['users.table.col.actions'] ?? 'Darbības'; ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -250,12 +257,12 @@ $total_users = count($users);
                                             <div class="user-details">
                                                 <span class="user-name">
                                                     <span class="uname-text"><?php echo htmlspecialchars($user['username']); ?></span>
-                                                    <?php if (!$user['is_active']): ?><span class="badge-deactivated">Deāktivēts</span><?php endif; ?>
+                                                    <?php if (!$user['is_active']): ?><span class="badge-deactivated" data-i18n="users.badge.deactivated"><?php echo $_t['users.badge.deactivated'] ?? 'Deāktivēts'; ?></span><?php endif; ?>
                                                     <span class="badge-role badge-role--<?php echo $user['role']; ?>">
                                                         <?php echo match($user['role']) {
-                                                            'administrator' => 'Admins',
-                                                            'moderator'     => 'Moderators',
-                                                            default         => 'Lietotājs',
+                                                            'administrator' => $_t['users.badge.admin'] ?? 'Admins',
+                                                            'moderator'     => $_t['users.badge.moderator'] ?? 'Moderators',
+                                                            default         => $_t['users.badge.user'] ?? 'Lietotājs',
                                                         }; ?>
                                                     </span>
                                                 </span>
@@ -268,24 +275,24 @@ $total_users = count($users);
                                     <td>
                                         <div class="action-buttons">
                                             <button class="tbl-btn tbl-btn--edit"
-                                                title="Rediģēt"
+                                                title="<?php echo htmlspecialchars($_t['users.edit.title'] ?? 'Rediģēt'); ?>"
                                                 onclick="openEditModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars(addslashes($user['username'])); ?>', '<?php echo htmlspecialchars(addslashes($user['email'])); ?>', '<?php echo $user['role']; ?>')"
                                             >
                                                 <i class="fa-solid fa-pencil"></i>
                                             </button>
                                             <?php if ($user['is_active']): ?>
                                             <button class="tbl-btn tbl-btn--delete"
-                                                title="Deāktivēt"
+                                                title="<?php echo htmlspecialchars($_t['users.deactivate.btn'] ?? 'Deāktivēt'); ?>"
                                                 onclick="openDeactivateModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars(addslashes($user['username'])); ?>')"
                                             >
                                                 <i class="fa-solid fa-ban"></i>
                                             </button>
                                             <?php else: ?>
-                                            <button type="button" class="tbl-btn tbl-btn--activate" title="Aktivēt"
+                                            <button type="button" class="tbl-btn tbl-btn--activate" title="<?php echo htmlspecialchars($_t['users.activate.title'] ?? 'Aktivēt'); ?>"
                                                 onclick="activateUser(<?php echo $user['id']; ?>)">
                                                 <i class="fa-solid fa-circle-check"></i>
                                             </button>
-                                            <button type="button" class="tbl-btn tbl-btn--delete" title="Dzēst"
+                                            <button type="button" class="tbl-btn tbl-btn--delete" title="<?php echo htmlspecialchars($_t['users.delete.btn'] ?? 'Dzēst'); ?>"
                                                 onclick="openDeleteModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars(addslashes($user['username'])); ?>')">
                                                 <i class="fa-solid fa-trash"></i>
                                             </button>
@@ -302,6 +309,8 @@ $total_users = count($users);
     </div>
 
     <script src="../js/script.js"></script>
+    <script>window._i18nData=<?php echo json_encode($_traw); ?>;window._i18nLang=<?php echo json_encode($_lang); ?>;window._i18nIsDefault=false;</script>
+    <script src="../../user/js/language.js"></script>
 
     <!-- Toast notification -->
     <div id="admToast" class="adm-toast"></div>
@@ -310,7 +319,7 @@ $total_users = count($users);
     <div id="editModal" class="adm-modal" style="display:none;">
         <div class="adm-modal-box adm-modal-box--wide">
             <div class="adm-modal-header">
-                <h2 class="adm-modal-title">Rediģēt lietotāju</h2>
+                <h2 class="adm-modal-title" data-i18n="users.edit.title"><?php echo $_t['users.edit.title'] ?? 'Rediģēt lietotāju'; ?></h2>
                 <button type="button" class="adm-modal-close" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form method="POST" id="editForm">
@@ -318,32 +327,32 @@ $total_users = count($users);
                 <input type="hidden" name="user_id" id="editUserId">
                 <div class="adm-modal-body">
                     <div class="form-group">
-                        <label class="form-label" for="editUsername">Lietotājvārds</label>
+                        <label class="form-label" for="editUsername" data-i18n="users.edit.username.label"><?php echo $_t['users.edit.username.label'] ?? 'Lietotājvārds'; ?></label>
                         <input type="text" id="editUsername" name="username" class="form-input" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="editEmail">E-pasts</label>
+                        <label class="form-label" for="editEmail" data-i18n="users.edit.email.label"><?php echo $_t['users.edit.email.label'] ?? 'E-pasts'; ?></label>
                         <input type="email" id="editEmail" name="email" class="form-input" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="editRole">Loma</label>
+                        <label class="form-label" for="editRole" data-i18n="users.edit.role.label"><?php echo $_t['users.edit.role.label'] ?? 'Loma'; ?></label>
                         <input type="hidden" id="editRole" name="role" value="user">
                         <div class="custom-select" id="editRoleSelect">
                             <div class="custom-select-trigger">
-                                <span class="custom-select-value" id="editRoleValue">Lietotājs</span>
+                                <span class="custom-select-value" id="editRoleValue"><?php echo $_t['users.badge.user'] ?? 'Lietotājs'; ?></span>
                                 <i class="fa-solid fa-chevron-down custom-select-arrow"></i>
                             </div>
                             <ul class="custom-options" id="editRoleOptions">
-                                <li class="custom-option" data-value="user"><i class="fa-solid fa-user"></i> Lietotājs</li>
-                                <li class="custom-option" data-value="moderator"><i class="fa-solid fa-shield"></i> Moderators</li>
-                                <li class="custom-option" data-value="administrator"><i class="fa-solid fa-shield-halved"></i> Administrators</li>
+                                <li class="custom-option" data-value="user"><i class="fa-solid fa-user"></i> <?php echo $_t['users.badge.user'] ?? 'Lietotājs'; ?></li>
+                                <li class="custom-option" data-value="moderator"><i class="fa-solid fa-shield"></i> <?php echo $_t['users.badge.moderator'] ?? 'Moderators'; ?></li>
+                                <li class="custom-option" data-value="administrator"><i class="fa-solid fa-shield-halved"></i> <?php echo $_t['users.badge.admin'] ?? 'Administrators'; ?></li>
                             </ul>
                         </div>
                     </div>
                 </div>
                 <div class="adm-modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Atcelt</button>
-                    <button type="submit" class="btn btn-primary">Saglabāt</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()" data-i18n="users.edit.cancel"><?php echo $_t['users.edit.cancel'] ?? 'Atcelt'; ?></button>
+                    <button type="submit" class="btn btn-primary" data-i18n="users.edit.save"><?php echo $_t['users.edit.save'] ?? 'Saglabāt'; ?></button>
                 </div>
             </form>
         </div>
@@ -353,14 +362,14 @@ $total_users = count($users);
     <div id="deactivateModal" class="adm-modal" style="display:none;">
         <div class="adm-modal-box">
             <div class="adm-modal-icon"><i class="fa-solid fa-ban"></i></div>
-            <h2 class="adm-modal-title">Deāktivēt kontu?</h2>
-            <p class="adm-modal-desc">Lietotājs <strong id="deactivateUsername"></strong> nevarēs piekļūst savam kontam, līdz tas tiks aktivēts atkārtoti.</p>
+            <h2 class="adm-modal-title" data-i18n="users.deactivate.title"><?php echo $_t['users.deactivate.title'] ?? 'Deāktivēt kontu?'; ?></h2>
+            <p class="adm-modal-desc">Lietotājs <strong id="deactivateUsername"></strong> <?php echo $_t['users.deactivate.desc'] ?? 'nevarēs piekļuties savam kontam, līdz tas tiks aktivēts atkārtoti.'; ?></p>
             <div class="adm-modal-actions">
-                <button type="button" class="btn btn-secondary" onclick="closeDeactivateModal()">Atcelt</button>
+                <button type="button" class="btn btn-secondary" onclick="closeDeactivateModal()" data-i18n="users.deactivate.cancel"><?php echo $_t['users.deactivate.cancel'] ?? 'Atcelt'; ?></button>
                 <form method="POST" id="deactivateForm" style="display:inline;">
                     <input type="hidden" name="action" value="deactivate">
                     <input type="hidden" name="user_id" id="deactivateUserId">
-                    <button type="submit" class="btn btn-danger">Deāktivēt</button>
+                    <button type="submit" class="btn btn-danger" data-i18n="users.deactivate.btn"><?php echo $_t['users.deactivate.btn'] ?? 'Deāktivēt'; ?></button>
                 </form>
             </div>
         </div>
@@ -370,12 +379,12 @@ $total_users = count($users);
     <div id="deleteModal" class="adm-modal" style="display:none;">
         <div class="adm-modal-box">
             <div class="adm-modal-icon"><i class="fa-solid fa-trash"></i></div>
-            <h2 class="adm-modal-title">Dzēst kontu?</h2>
-            <p class="adm-modal-desc">Vai tiešām vēlies <strong>neatgriezeniski dzēst</strong> lietotāju <strong id="deleteUsername"></strong>? Visi konta dati tiks izdzēsti un to nebūs iespējams atjaunot.</p>
+            <h2 class="adm-modal-title" data-i18n="users.delete.title"><?php echo $_t['users.delete.title'] ?? 'Dzēst kontu?'; ?></h2>
+            <p class="adm-modal-desc"><?php echo $_t['users.delete.intro'] ?? 'Vai tiešām vēlies neatgriezeniski dzēst'; ?> <strong id="deleteUsername"></strong><?php echo $_t['users.delete.desc'] ?? '? Visi konta dati tiks izdžēsti un to nebūs iespējams atjaunot.'; ?></p>
             <input type="hidden" id="deleteUserId">
             <div class="adm-modal-actions">
-                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Atcelt</button>
-                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Dzēst</button>
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()" data-i18n="users.delete.cancel"><?php echo $_t['users.delete.cancel'] ?? 'Atcelt'; ?></button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()" data-i18n="users.delete.btn"><?php echo $_t['users.delete.btn'] ?? 'Dzēst'; ?></button>
             </div>
         </div>
     </div>
@@ -537,7 +546,12 @@ $total_users = count($users);
             row.querySelector('.user-email').textContent = email;
             var roleBadge = row.querySelector('.badge-role');
             roleBadge.className = 'badge-role badge-role--' + role;
-            roleBadge.textContent = role === 'administrator' ? 'Admins' : role === 'moderator' ? 'Moderators' : 'Lietotājs';
+            var _d = (window._i18n && window._i18n.T[window._i18n.lang]) || {};
+            roleBadge.textContent = role === 'administrator'
+                ? (_d['users.badge.admin']     || 'Admins')
+                : role === 'moderator'
+                    ? (_d['users.badge.moderator'] || 'Moderators')
+                    : (_d['users.badge.user']      || 'Lietotājs');
             var editBtn = row.querySelector('.tbl-btn--edit');
             editBtn.setAttribute('onclick', 'openEditModal(' + userId + ', \'' + username.replace(/'/g, "\\'") + '\', \'' + email.replace(/'/g, "\\'") + '\', \'' + role + '\')');
             var banBtn = row.querySelector('.tbl-btn--delete');
@@ -553,9 +567,9 @@ $total_users = count($users);
     let roleDropdownOpen = false;
 
     const roleLabels = {
-        user:          '<i class="fa-solid fa-user"></i> Lietotājs',
-        moderator:     '<i class="fa-solid fa-shield"></i> Moderators',
-        administrator: '<i class="fa-solid fa-shield-halved"></i> Administrators'
+        user:          '<i class="fa-solid fa-user"></i> ' + ((window._i18nData && window._i18nData[window._i18nLang || 'lv']) || {})['users.badge.user']      || 'Lietotājs',
+        moderator:     '<i class="fa-solid fa-shield"></i> ' + ((window._i18nData && window._i18nData[window._i18nLang || 'lv']) || {})['users.badge.moderator'] || 'Moderators',
+        administrator: '<i class="fa-solid fa-shield-halved"></i> ' + ((window._i18nData && window._i18nData[window._i18nLang || 'lv']) || {})['users.badge.admin'] || 'Administrators'
     };
 
     function setEditRole(value) {
