@@ -252,6 +252,17 @@
 }
 
 @media (max-width: 480px) {
+    #dayModal .modal-content {
+        width: 100%;
+        max-width: 100%;
+        border-radius: 20px 20px 0 0;
+        margin-top: auto;
+    }
+
+    #dayModal {
+        align-items: flex-end;
+    }
+
     .calendar-container { padding: 16px 12px; }
     .calendar-header    { margin-bottom: 16px; }
     .calendar-month     { font-size: 18px; }

@@ -397,7 +397,7 @@ body {
 /* Stats Grid */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(5, 1fr);
     gap: 24px;
     margin-bottom: 40px;
 }
@@ -1437,5 +1437,92 @@ body.light-mode .adm-toast--error {
     .btn {
         padding: 10px 20px;
         font-size: 14px;
+    }
+}
+
+/* ── Mobile bottom navigation ─────────────────────────────────────────────── */
+
+.mobile-bottom-nav { display: none; }
+
+@media (max-width: 768px) {
+    .sidebar { width: 80px; }
+
+    .sidebar .logo-text,
+    .sidebar .nav-text,
+    .sidebar .user-details { display: none; }
+
+    .admin-content {
+        margin-left: 80px;
+        padding: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .sidebar { display: none; }
+
+    .admin-content {
+        margin-left: 0;
+        padding: 16px;
+        width: 100%;
+        padding-bottom: 80px;
+    }
+
+    .admin-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+        margin-bottom: 20px;
+    }
+
+    .admin-title { font-size: 20px; }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .info-panels {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .mobile-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        background: rgba(15, 25, 35, 0.97);
+        backdrop-filter: blur(12px);
+        border-top: 1px solid var(--border);
+        z-index: 500;
+        justify-content: space-around;
+        align-items: center;
+        padding: 0 4px;
+    }
+
+    .mobile-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 8px 12px;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        flex: 1;
+    }
+
+    .mobile-nav-item i { font-size: 18px; }
+
+    .mobile-nav-item.active,
+    .mobile-nav-item:hover {
+        color: var(--primary);
+        background: rgba(20, 184, 166, 0.1);
     }
 }

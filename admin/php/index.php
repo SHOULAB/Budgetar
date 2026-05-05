@@ -151,7 +151,6 @@ $_t    = $_traw[$_lang] ?? $_traw['lv'] ?? [];
                             <div class="stat-card-value stat-status--<?php echo $latency_level; ?>" style="font-size: 26px;">
                                 <span class="status-dot"></span><?php echo $db_latency_ms; ?> ms
                             </div>
-                            <div class="stat-card-subinfo">PHP <?php echo htmlspecialchars($system_info['php_version']); ?> &middot; MySQL <?php echo htmlspecialchars($system_info['database_version']); ?></div>
                         </div>
                         <div class="stat-card-icon"><i class="fa-solid fa-database"></i></div>
                     </div>
@@ -237,5 +236,6 @@ $_t    = $_traw[$_lang] ?? $_traw['lv'] ?? [];
     <script src="../js/script.js"></script>
     <script>window._i18nData=<?php echo json_encode($_traw); ?>;window._i18nLang=<?php echo json_encode($_lang); ?>;window._i18nIsDefault=false;</script>
     <script src="../../user/js/language.js"></script>
+    <?php $active_page = 'dashboard'; include 'mobile_nav.php'; ?>
 </body>
 </html>

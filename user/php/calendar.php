@@ -581,8 +581,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                         <div class="cal-picker-dropdown" id="calPickerDropdown"></div>
                     </div>
                     <a href="?month=<?php echo $next_month; ?>&year=<?php echo $next_year; ?>" class="calendar-nav" data-month="<?php echo $next_month; ?>" data-year="<?php echo $next_year; ?>" data-direction="next">
-                        <span class="cal-nav-arrow">→</span>
                         <span data-i18n="cal.nav.next">Nākamais</span>
+                        <span class="cal-nav-arrow">→</span>
                     </a>
                 </div>
 

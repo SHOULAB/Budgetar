@@ -984,5 +984,6 @@ if ($stmt) {
         newInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSave(); });
     })();
     </script>
+    <?php $active_page = 'settings'; include __DIR__ . '/mobile_nav.php'; ?>
 </body>
 </html>

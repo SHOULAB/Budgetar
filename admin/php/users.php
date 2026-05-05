@@ -747,5 +747,6 @@ mysqli_stmt_close($stmt);
     window.addEventListener('resize', function() { if (roleDropdownOpen) positionRoleOptions(); });
     window.addEventListener('scroll', function() { if (roleDropdownOpen) positionRoleOptions(); }, true);
     </script>
+    <?php $active_page = 'users'; include 'mobile_nav.php'; ?>
 </body>
 </html>

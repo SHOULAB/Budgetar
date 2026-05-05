@@ -26,7 +26,7 @@
     <?php if (in_array(strtolower($_SESSION['role'] ?? 'user'), ['administrator', 'moderator'])): ?>
     <a href="../../admin/php/index.php" class="mobile-nav-item">
         <i class="fa-solid fa-shield-halved"></i>
-        <span>Admin Panel</span>
+        <span>Admin</span>
     </a>
     <?php endif; ?>
     <a href="logout.php" class="mobile-nav-item">

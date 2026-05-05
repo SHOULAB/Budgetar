@@ -35,7 +35,7 @@
         <?php if (in_array(strtolower($_SESSION['role'] ?? 'user'), ['administrator', 'moderator'])): ?>
         <a href="../../admin/php/index.php" class="nav-item nav-item--bottom">
             <span class="nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
-            <span class="nav-text">Admin Panel</span>
+            <span class="nav-text">Admin</span>
         </a>
         <?php endif; ?>
     </nav>
