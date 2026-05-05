@@ -1526,3 +1526,18 @@ body.light-mode .adm-toast--error {
         background: rgba(20, 184, 166, 0.1);
     }
 }
+/* -- Dashboard row slide-in animation ---------------------------------------- */
+@keyframes rowSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.row-new {
+    animation: rowSlideIn 0.5s ease forwards;
+}

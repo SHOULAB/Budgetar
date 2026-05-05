@@ -174,7 +174,7 @@ $_t    = $_traw[$_lang] ?? $_traw['lv'] ?? [];
                                 <th data-i18n="users.table.col.created"><?php echo $_t['users.table.col.created'] ?? 'Reģistrācijas datums'; ?></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="tbody-registered">
                             <?php foreach ($recent_registered as $u): ?>
                             <tr>
                                 <td>
@@ -210,7 +210,7 @@ $_t    = $_traw[$_lang] ?? $_traw['lv'] ?? [];
                                 <th data-i18n="users.table.col.last.login"><?php echo $_t['users.table.col.last.login'] ?? 'Pēdējā pieslēgšanās'; ?></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="tbody-logins">
                             <?php foreach ($recent_logins as $u): ?>
                             <tr>
                                 <td>
