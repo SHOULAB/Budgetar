@@ -6,6 +6,9 @@ if (!isset($_SESSION['user_id']) || !in_array(strtolower($_SESSION['role'] ?? ''
 }
 require_once('../../assets/database.php');
 
+$_auth_login_redirect = '../../user/php/login.php';
+require_once('../../assets/auth_check.php');
+
 $user_id  = $_SESSION['user_id'];
 $username = $_SESSION['username'];
 $current_email = '';

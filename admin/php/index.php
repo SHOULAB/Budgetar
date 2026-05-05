@@ -7,6 +7,9 @@ if (!isset($_SESSION['user_id']) || !in_array(strtolower($_SESSION['role'] ?? ''
     exit();
 }
 
+$_auth_login_redirect = '../../user/php/login.php';
+require_once('../../assets/auth_check.php');
+
 $stats = [
     'total_users'        => 0,
     'total_budget_count' => 0,

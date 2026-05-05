@@ -5,6 +5,7 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 require_once('../../assets/database.php');
+require_once('../../assets/auth_check.php');
 
 function is_ajax_request() {
     return !empty($_SERVER['HTTP_X_REQUESTED_WITH'])

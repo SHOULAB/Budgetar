@@ -7,6 +7,9 @@ if (!isset($_SESSION['user_id']) || !in_array(strtolower($_SESSION['role'] ?? ''
     exit();
 }
 
+$_auth_login_redirect = '../../user/php/login.php';
+require_once('../../assets/auth_check.php');
+
 // ── Load language + translations ──────────────────────────────────────────────
 $_lang = $_SESSION['language'] ?? 'lv';
 $_traw = json_decode(file_get_contents(__DIR__ . '/translate.json'), true) ?? [];

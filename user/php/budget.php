@@ -9,6 +9,8 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+require_once('../../assets/auth_check.php');
+
 $user_id  = $_SESSION['user_id'];
 $username = $_SESSION['username'];
 $error    = '';
