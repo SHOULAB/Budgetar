@@ -99,6 +99,12 @@ if (!$_igCheck || mysqli_num_rows($_igCheck) === 0) {
     mysqli_query($savienojums, "ALTER TABLE BU_transactions ADD COLUMN ignore_budget TINYINT(1) NOT NULL DEFAULT 0");
 }
 
+// Ensure recurring_skip_months column exists
+$_skipCheck = mysqli_query($savienojums, "SHOW COLUMNS FROM BU_transactions LIKE 'recurring_skip_months'");
+if (!$_skipCheck || mysqli_num_rows($_skipCheck) === 0) {
+    mysqli_query($savienojums, "ALTER TABLE BU_transactions ADD COLUMN recurring_skip_months TEXT NULL");
+}
+
 // Combined transaction submit
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_transaction'])) {
     $date = $_POST['transaction_date'];
@@ -232,6 +238,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_transaction'])
     exit();
 }
 
+// ── Skip recurring transaction for this month only ─────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['skip_this_month'])) {
+    $transaction_id = intval($_POST['transaction_id']);
+    $view_month     = isset($_POST['view_month']) ? intval($_POST['view_month']) : $current_month;
+    $view_year      = isset($_POST['view_year'])  ? intval($_POST['view_year'])  : $current_year;
+    $skip_key       = sprintf('%04d-%02d', $view_year, $view_month);
+
+    // Fetch current skip list
+    $stmt = mysqli_prepare($savienojums,
+        "SELECT recurring_skip_months FROM BU_transactions WHERE id = ? AND user_id = ? AND is_recurring = 1");
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "ii", $transaction_id, $user_id);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_bind_result($stmt, $current_skips);
+        $found = mysqli_stmt_fetch($stmt);
+        mysqli_stmt_close($stmt);
+
+        if ($found) {
+            $skips = array_filter(array_map('trim', explode(',', $current_skips ?? '')));
+            if (!in_array($skip_key, $skips, true)) {
+                $skips[] = $skip_key;
+            }
+            $new_skips = implode(',', $skips);
+
+            $ustmt = mysqli_prepare($savienojums,
+                "UPDATE BU_transactions SET recurring_skip_months = ? WHERE id = ? AND user_id = ?");
+            if ($ustmt) {
+                mysqli_stmt_bind_param($ustmt, "sii", $new_skips, $transaction_id, $user_id);
+                mysqli_stmt_execute($ustmt);
+                mysqli_stmt_close($ustmt);
+            }
+        }
+    }
+
+    if (is_ajax_request()) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true]);
+        exit();
+    }
+
+    header('Location: calendar.php?month=' . $current_month . '&year=' . $current_year);
+    exit();
+}
+
 // gets current day
 $current_month = isset($_GET['month']) ? intval($_GET['month']) : date('n');
 $current_year = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
@@ -258,7 +308,7 @@ while ($row = mysqli_fetch_assoc($result)) {
 mysqli_stmt_close($stmt);
 
 // Get recurring transactions from previous months and add them to current month
-$recurringQuery = "SELECT id, date, amount, type, description, ignore_budget FROM BU_transactions WHERE user_id = ? AND is_recurring = 1 AND date < ?";
+$recurringQuery = "SELECT id, date, amount, type, description, ignore_budget, recurring_skip_months FROM BU_transactions WHERE user_id = ? AND is_recurring = 1 AND date < ?";
 if ($hasRecurringStopDateColumn) {
     $recurringQuery .= " AND (recurring_stop_date IS NULL OR recurring_stop_date >= ?)";
 }
@@ -273,7 +323,17 @@ if ($hasRecurringStopDateColumn) {
 mysqli_stmt_execute($stmt_recurring);
 $recurring_result = mysqli_stmt_get_result($stmt_recurring);
 
+$current_view_key = sprintf('%04d-%02d', $current_year, $current_month);
+
 while ($row = mysqli_fetch_assoc($recurring_result)) {
+    // Skip if this month is in the skip list
+    if (!empty($row['recurring_skip_months'])) {
+        $skipped = array_map('trim', explode(',', $row['recurring_skip_months']));
+        if (in_array($current_view_key, $skipped, true)) {
+            continue;
+        }
+    }
+
     $original_day = date('j', strtotime($row['date']));
     $days_in_current_month = date('t', strtotime($first_day));
     
@@ -671,10 +731,13 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
             'typeExpense'     => $_t['cal.type.expense']            ?? 'Izdevums',
             'badgeMonthly'    => $_t['cal.badge.monthly']           ?? 'Ikmēneša',
             'badgeIgnoreBudget' => $_t['cal.badge.ignore.budget'] ?? 'Ārpus budžeta',
-            'deleteTitle'     => $_t['cal.delete.title']            ?? 'Apstiprināt dzēšanu',
+            'deleteTitle'     => $_t['cal.delete.title']            ?? 'Apstiprināšana',
             'deleteMessage'   => $_t['cal.delete.message']          ?? 'Vai tiešām vēlies dzēst šo ierakstu? Šī darbība nevar tikt atsaukta.',
+            'deleteRecurringMessage' => $_t['cal.delete.recurring.message'] ?? 'Šis ir atkārtots ieraksts. Ko vēlies darīt?',
             'deleteCancel'    => $_t['cal.delete.cancel']           ?? 'Atcelt',
             'deleteBtn'       => $_t['cal.delete.btn']              ?? 'Dzēst',
+            'deleteSkipMonth' => $_t['cal.delete.skip.month']       ?? 'Tikai šomēnes',
+            'deleteAllBtn'    => $_t['cal.delete.all']              ?? 'Dzēst',
             'addIncome'       => $_t['cal.modal.add.income']        ?? 'Pievienot ienākumu',
             'addExpense'      => $_t['cal.modal.add.expense']       ?? 'Pievienot izdevumu',
             'recurIncome'     => $_t['cal.modal.recurring.income']  ?? 'Ikmēneša ienākums (atkārtosies katru mēnesi)',

@@ -88,7 +88,7 @@ function openDayModal(day, month, year) {
                 : '';
             
             const deleteBtn = `<button type="button" class="delete-btn" title="Dzēst"
-                       onclick="handleDeleteClick(${parseInt(transaction.id, 10)})">
+                       onclick="handleDeleteClick(${parseInt(transaction.id, 10)}, ${transaction.is_recurring_display ? 'true' : 'false'})">
                        <i class="fa-solid fa-trash"></i>
                    </button>`;
             
@@ -183,8 +183,53 @@ function showDeleteConfirm(onConfirm) {
     });
 }
 
-function handleDeleteClick(transactionId) {
-    showDeleteConfirm(function () {
+function showRecurringDeleteConfirm(onSkipMonth, onDeleteAll) {
+    let existing = document.getElementById('deleteConfirmModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'deleteConfirmModal';
+    modal.className = 'modal modal-open';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">${calendarStrings.deleteTitle}</h2>
+                <button type="button" class="modal-close" aria-label="Aizvērt">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>${calendarStrings.deleteRecurringMessage}</p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" id="deleteCancelBtn">${calendarStrings.deleteCancel}</button>
+                <button type="button" class="btn btn-secondary" id="deleteSkipMonthBtn">
+                    <i class="fa-solid fa-calendar-xmark"></i> ${calendarStrings.deleteSkipMonth}
+                </button>
+                <button type="button" class="btn btn-danger" id="deleteAllBtn">
+                    <i class="fa-solid fa-trash"></i> ${calendarStrings.deleteAllBtn}
+                </button>
+            </div>
+        </div>`;
+
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+
+    modal.querySelector('.modal-close').addEventListener('click', closeDeleteConfirm);
+    modal.querySelector('#deleteCancelBtn').addEventListener('click', closeDeleteConfirm);
+    modal.querySelector('#deleteSkipMonthBtn').addEventListener('click', function() {
+        closeDeleteConfirm();
+        onSkipMonth();
+    });
+    modal.querySelector('#deleteAllBtn').addEventListener('click', function() {
+        closeDeleteConfirm();
+        onDeleteAll();
+    });
+    modal.addEventListener('click', function(event) {
+        if (event.target === modal) closeDeleteConfirm();
+    });
+}
+
+function handleDeleteClick(transactionId, isRecurring) {
+    function doDelete() {
         const formData = new FormData();
         formData.append('delete_transaction', '1');
         formData.append('transaction_id', transactionId);
@@ -215,7 +260,46 @@ function handleDeleteClick(transactionId) {
         .catch(function () {
             window.location.href = 'calendar.php?month=' + currentMonth + '&year=' + currentYear;
         });
-    });
+    }
+
+    function doSkipMonth() {
+        const formData = new FormData();
+        formData.append('skip_this_month', '1');
+        formData.append('transaction_id', transactionId);
+        formData.append('view_month', currentMonth);
+        formData.append('view_year', currentYear);
+
+        fetch('calendar.php', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+            body: formData
+        })
+        .then(function (response) {
+            if (!response.ok) throw new Error('Failed to skip transaction');
+            return response.json();
+        })
+        .then(function (data) {
+            if (data.success) {
+                closeDeleteConfirm();
+                const savedDay = window._dayModalOpenDay;
+                loadCalendarMonth(currentMonth, currentYear, false, function() {
+                    if (savedDay) openDayModal(savedDay, currentMonth, currentYear);
+                });
+            } else {
+                window.location.href = 'calendar.php?month=' + currentMonth + '&year=' + currentYear;
+            }
+        })
+        .catch(function () {
+            window.location.href = 'calendar.php?month=' + currentMonth + '&year=' + currentYear;
+        });
+    }
+
+    if (isRecurring) {
+        showRecurringDeleteConfirm(doSkipMonth, doDelete);
+    } else {
+        showDeleteConfirm(doDelete);
+    }
 }
 
 function submitDeleteForm(form) {
