@@ -262,6 +262,28 @@
     "index.hero.btn.more":  "Uzzināt vairāk",
     "index.demo.title":     "Šī mēneša pārskats",
 
+    "index.features.title": "Kāpēc izvēlēties Budgetar?",
+    "index.feat1.title":    "Detalizēti pārskati",
+    "index.feat1.desc":     "Vizuāli pārskati par ienākumiem un izdevumiem — pa kategorijām, mēnešiem un tendencēm.",
+    "index.feat2.title":    "Budžetu pārvaldība",
+    "index.feat2.desc":     "Izveido budžetus katrai kategorijai un seko līdzi, cik daudz esi jau iztērējis.",
+    "index.feat3.title":    "Kalendāra skats",
+    "index.feat3.desc":     "Redzi visas transakcijas kalendārā — vienkārši noskaidro, kur nauda aiziet katru dienu.",
+    "index.feat4.title":    "Droši un privāti",
+    "index.feat4.desc":     "Tavi dati ir aizsargāti. Neviens cits nevar piekļūt taviem personīgajiem finanšu datiem.",
+
+    "index.about.title":    "Kā tas darbojas?",
+    "index.step1.title":    "Izveido kontu",
+    "index.step1.desc":     "Reģistrējies bez maksas 30 sekundēs. Nav nepieciešams kredītkarti vai abonēments.",
+    "index.step2.title":    "Pievieno transakcijas",
+    "index.step2.desc":     "Ievadi savus ienākumus un izdevumus pa kategorijām. Izveido savus personīgos budžetus.",
+    "index.step3.title":    "Analīzē un plāno",
+    "index.step3.desc":     "Redzi savas finanses skaidri — ar pārskatu diagrammām, kalendāru un budžeta izsekotāju.",
+
+    "index.cta.title":      "Gatavs sākt kontrolēt savas finanses?",
+    "index.cta.desc":       "Pievienojies Budgetar jau šodien — pilnīgi bez maksas.",
+    "index.cta.btn":        "Izveidot kontu",
+
     "~~~ login.php ~~~": "",
 
     "login.page.title":    "Ieiet - Budgetar",
@@ -621,6 +643,28 @@
     "index.hero.btn.start": "Get started",
     "index.hero.btn.more":  "Learn more",
     "index.demo.title":     "This month's report",
+
+    "index.features.title": "Why choose Budgetar?",
+    "index.feat1.title":    "Detailed reports",
+    "index.feat1.desc":     "Visual reports on income and expenses — by category, month, and trends.",
+    "index.feat2.title":    "Budget management",
+    "index.feat2.desc":     "Create budgets for each category and track how much you've already spent.",
+    "index.feat3.title":    "Calendar view",
+    "index.feat3.desc":     "See all transactions in the calendar — easily find out where your money goes each day.",
+    "index.feat4.title":    "Safe and private",
+    "index.feat4.desc":     "Your data is protected. No one else can access your personal financial data.",
+
+    "index.about.title":    "How does it work?",
+    "index.step1.title":    "Create an account",
+    "index.step1.desc":     "Register for free in 30 seconds. No credit card or subscription required.",
+    "index.step2.title":    "Add transactions",
+    "index.step2.desc":     "Enter your income and expenses by category. Create your own personal budgets.",
+    "index.step3.title":    "Analyze and plan",
+    "index.step3.desc":     "See your finances clearly — with report charts, a calendar, and a budget tracker.",
+
+    "index.cta.title":      "Ready to take control of your finances?",
+    "index.cta.desc":       "Join Budgetar today — completely free.",
+    "index.cta.btn":        "Create account",
 
     "~~~ login.php ~~~": "",
 

@@ -81,7 +81,6 @@ body {
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(20, 184, 166, 0.4);
 }
 
 .btn-secondary {
@@ -93,7 +92,6 @@ body {
 .btn-secondary:hover {
     background: rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .btn-outline {
@@ -135,7 +133,6 @@ body {
 .btn-danger:hover {
     background: #dc2626;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
 }
 
 .btn-small {

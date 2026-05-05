@@ -10,6 +10,7 @@ $_traw = json_decode(file_get_contents(__DIR__ . '/translate.json'), true) ?? []
     <title>Budgetar</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
     <link rel="icon" href="../../assets/image/logo.png" type="image/png">
 </head>
 <body>
@@ -83,6 +84,77 @@ $_traw = json_decode(file_get_contents(__DIR__ . '/translate.json'), true) ?? []
                 </div>
             </div>
         </main>
+
+        <!-- ── Features Section ─────────────────────────────────────── -->
+        <section class="features" id="features">
+            <h2 class="section-title" data-i18n="index.features.title">Kāpēc izvēlēties Budgetar?</h2>
+            <div class="features-grid">
+                <div class="feature-row">
+                    <div class="feature-row-icon feat-color-1"><i class="fa-solid fa-chart-pie"></i></div>
+                    <div class="feature-row-text">
+                        <h3 data-i18n="index.feat1.title">Detalizēti pārskati</h3>
+                        <p data-i18n="index.feat1.desc">Vizuāli pārskati par ienākumiem un izdevumiem — pa kategorijām, mēnešiem un tendencēm.</p>
+                    </div>
+                </div>
+                <div class="feature-row">
+                    <div class="feature-row-icon feat-color-2"><i class="fa-solid fa-wallet"></i></div>
+                    <div class="feature-row-text">
+                        <h3 data-i18n="index.feat2.title">Budžetu pārvaldība</h3>
+                        <p data-i18n="index.feat2.desc">Izveido budžetus katrai kategorijai un seko līdzi, cik daudz esi jau iztērējis.</p>
+                    </div>
+                </div>
+                <div class="feature-row">
+                    <div class="feature-row-icon feat-color-3"><i class="fa-solid fa-calendar-days"></i></div>
+                    <div class="feature-row-text">
+                        <h3 data-i18n="index.feat3.title">Kalendāra skats</h3>
+                        <p data-i18n="index.feat3.desc">Redzi visas transakcijas kalendārā — vienkārši noskaidro, kur nauda aiziet katru dienu.</p>
+                    </div>
+                </div>
+                <div class="feature-row">
+                    <div class="feature-row-icon feat-color-4"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div class="feature-row-text">
+                        <h3 data-i18n="index.feat4.title">Droši un privāti</h3>
+                        <p data-i18n="index.feat4.desc">Tavi dati ir aizsargāti. Neviens cits nevar piekļūt taviem personīgajiem finanšu datiem.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── About Section ────────────────────────────────────────── -->
+        <section class="about-section">
+            <h2 class="section-title" data-i18n="index.about.title">Kā tas darbojas?</h2>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h3 data-i18n="index.step1.title">Izveido kontu</h3>
+                    <p data-i18n="index.step1.desc">Reģistrējies bez maksas 30 sekundēs. Nav nepieciešams kredītkarte vai abonements.</p>
+                </div>
+                <div class="step-connector"><i class="fa-solid fa-arrow-right"></i></div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h3 data-i18n="index.step2.title">Pievieno transakcijas</h3>
+                    <p data-i18n="index.step2.desc">Ievadi savus ienākumus un izdevumus pa kategorijām. Izveido savus personīgos budžetus.</p>
+                </div>
+                <div class="step-connector"><i class="fa-solid fa-arrow-right"></i></div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h3 data-i18n="index.step3.title">Analizē un plāno</h3>
+                    <p data-i18n="index.step3.desc">Redzi savas finanses skaidri — ar pārskatu diagrammām, kalendāru un budžeta izsekotāju.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── CTA Section ──────────────────────────────────────────── -->
+        <section class="cta-section">
+            <div class="cta-content">
+                <h2 data-i18n="index.cta.title">Gatavs sākt kontrolēt savas finanses?</h2>
+                <p data-i18n="index.cta.desc">Pievienojies Budgetar jau šodien — pilnīgi bez maksas.</p>
+                <a href="register.php" class="btn btn-large btn-primary">
+                    <span data-i18n="index.cta.btn">Izveidot kontu</span>
+                    <span class="arrow">→</span>
+                </a>
+            </div>
+        </section>
 
         <footer class="footer">
             <div class="footer-content">

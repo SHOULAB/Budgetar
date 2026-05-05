@@ -391,6 +391,7 @@ if ($stmt) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Budgetar</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../../user/css/dashboard.css">
     <link rel="stylesheet" href="../../user/css/settings.css">
     <link rel="icon" href="../../assets/image/logo.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
@@ -417,6 +418,46 @@ if ($stmt) {
                     <?php echo htmlspecialchars($error_message); ?>
                 </div>
             <?php endif; ?>
+
+            <!-- ── Information ──────────────────────────────────────────────── -->
+            <section class="settings-section">
+                <div class="settings-section-header">
+                    <div class="settings-section-icon">
+                        <i class="fa-solid fa-circle-info"></i>
+                    </div>
+                    <div>
+                        <h2 class="settings-section-title" data-i18n="info.title">Informācija</h2>
+                        <p class="settings-section-subtitle" data-i18n="info.subtitle">Juridiskā informācija un privātuma politika</p>
+                    </div>
+                </div>
+                <div class="settings-card">
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label" data-i18n="info.privacy.label">Privātuma politika</span>
+                            <span class="settings-row-desc" data-i18n="info.privacy.desc">Uzziniet, kā mēs apkopojam un izmantojam jūsu datus</span>
+                        </div>
+                        <div class="settings-row-field">
+                            <a href="../../user/php/privacy_policy.php" class="btn btn-secondary">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                <span data-i18n="info.privacy.btn">Skatīt</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="settings-divider"></div>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label" data-i18n="info.terms.label">Lietošānas noteikumi</span>
+                            <span class="settings-row-desc" data-i18n="info.terms.desc">Pakalpojuma lietošānas nosacījumi un ierobežojumi</span>
+                        </div>
+                        <div class="settings-row-field">
+                            <a href="../../user/php/lietosanas_noteikumi.php" class="btn btn-secondary">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                <span data-i18n="info.terms.btn">Skatīt</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <!-- ── Appearance & Currency ────────────────────────────────────── -->
             <section class="settings-section">
