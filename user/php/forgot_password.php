@@ -12,11 +12,9 @@ require_once '../../assets/mailer.php';
 
 // ─── Language detection ───────────────────────────────────────────────────────
 $_supported   = ['lv', 'en'];
-$_browserLang = 'lv';
-if (!empty($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-    $code = strtolower(substr(trim($_SERVER['HTTP_ACCEPT_LANGUAGE']), 0, 2));
-    if (in_array($code, $_supported)) $_browserLang = $code;
-}
+// Read the language passed from localStorage via the hidden form field
+$_postedLang  = trim($_POST['_lang'] ?? '');
+$_browserLang = (in_array($_postedLang, $_supported)) ? $_postedLang : 'lv';
 $_traw = json_decode(file_get_contents(__DIR__ . '/translate.json'), true) ?? [];
 $_t    = $_traw[$_browserLang] ?? $_traw['lv'];
 
@@ -74,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $script_dir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
             $reset_link = $protocol . '://' . $host . $script_dir . '/reset_password.php?token=' . urlencode($token);
 
-            send_reset_email($email, $user['username'], $reset_link);
+            send_reset_email($email, $user['username'], $reset_link, $_browserLang);
         }
 
         // Always show the same message regardless (prevents user enumeration)
@@ -117,6 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <?php if (!$success): ?>
             <form class="auth-form" method="POST" action="">
+                <input type="hidden" name="_lang" id="_lang" value="lv">
                 <div class="form-group">
                     <label for="email" class="form-label" data-i18n="forgot.email.label">E-pasts</label>
                     <input
@@ -170,5 +169,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script>window._i18nData=<?php echo json_encode($_traw); ?>;window._i18nIsDefault=true;</script>
     <script src="../js/language.js"></script>
     <script src="../js/script.js"></script>
+    <script>
+        // Populate the hidden language field from localStorage so PHP knows the active language
+        (function () {
+            var lang = localStorage.getItem('budgetar_language') || 'lv';
+            var el = document.getElementById('_lang');
+            if (el) el.value = lang;
+        })();
+    </script>
 </body>
 </html>

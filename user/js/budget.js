@@ -140,6 +140,108 @@ document.addEventListener('keydown', function (e) {
 });
 
 
+// ─── Quarter card switching ───────────────────────────────────────────────────
+
+function switchQuarterTab(card, q) {
+    const quarters = JSON.parse(card.dataset.quartersJson);
+    const qd = quarters[q];
+    if (!qd) return;
+
+    // Update active tab button
+    card.querySelectorAll('.quarter-nav-btn').forEach(function (btn) {
+        btn.classList.toggle('active', btn.dataset.q === q);
+    });
+
+    // Update period text
+    const periodEl = card.querySelector('.qcard-period');
+    if (periodEl) {
+        periodEl.textContent = qFmtDate(qd.start_date) + ' \u2013 ' + qFmtDate(qd.end_date);
+    }
+
+    // Determine status
+    const now    = Date.now();
+    const start  = new Date(qd.start_date + 'T00:00:00').getTime();
+    const end    = new Date(qd.end_date   + 'T23:59:59').getTime();
+    const pct    = Math.min(parseFloat(qd.percentage), 100);
+    const thresh = parseFloat(qd.warning_threshold);
+
+    let statusClass, statusText, progressClass;
+    if (start > now) {
+        statusClass   = 'status-upcoming';
+        statusText    = qGetT('budget.status.upcoming', 'Gaid\u0101mais');
+        progressClass = 'progress-safe';
+    } else if (end < now) {
+        statusClass   = 'status-expired';
+        statusText    = qGetT('budget.status.expired', 'Beidzies');
+        progressClass = 'progress-danger';
+    } else if (pct >= thresh) {
+        statusClass   = 'status-warning';
+        statusText    = qGetT('budget.status.warning', 'Br\u012Bdin\u0101jums');
+        progressClass = 'progress-warning';
+    } else {
+        statusClass   = 'status-active';
+        statusText    = qGetT('budget.status.active', 'Akt\u012Bvs');
+        progressClass = 'progress-safe';
+    }
+
+    // Update status badge
+    const statusEl = card.querySelector('.qcard-status');
+    if (statusEl) {
+        statusEl.className   = 'budget-status qcard-status ' + statusClass;
+        statusEl.textContent = statusText;
+    }
+
+    // Update amounts
+    const budgetNumEl    = card.querySelector('.qcard-budget-num');
+    const spentNumEl     = card.querySelector('.qcard-spent-num');
+    const remainingNumEl = card.querySelector('.qcard-remaining-num');
+    if (budgetNumEl)    budgetNumEl.textContent    = qFmtAmt(qd.budget_amount);
+    if (spentNumEl)     spentNumEl.textContent     = qFmtAmt(qd.spent);
+    if (remainingNumEl) remainingNumEl.textContent = qFmtAmt(qd.remaining);
+
+    // Update progress bar
+    const bar = card.querySelector('.qcard-progress-bar');
+    if (bar) {
+        bar.style.width = pct + '%';
+        bar.className   = 'budget-progress-bar qcard-progress-bar ' + progressClass;
+    }
+
+    // Update percentage text
+    const pctEl = card.querySelector('.qcard-pct-num');
+    if (pctEl) pctEl.textContent = pct.toFixed(1);
+
+    // Store active quarter on card
+    card.dataset.activeQ = q;
+}
+
+function openEditModalFromCard(btn) {
+    const card     = btn.closest('.budget-card-quarterly');
+    const quarters = JSON.parse(card.dataset.quartersJson);
+    const activeQ  = card.dataset.activeQ;
+    const budget   = quarters[activeQ] || quarters[Object.keys(quarters)[0]];
+    openEditModal(budget);
+}
+
+function qFmtDate(ymd) {
+    if (!ymd) return '';
+    const p = ymd.split('-');
+    return p[2] + '.' + p[1] + '.' + p[0];
+}
+
+function qFmtAmt(n) {
+    return (parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function qGetT(key, fallback) {
+    if (window._i18n && window._i18n.T) {
+        var lang = window._i18n.lang || 'lv';
+        var T    = window._i18n.T[lang] || window._i18n.T['lv'];
+        if (T && T[key]) return T[key];
+    }
+    return fallback;
+}
+
+
 // ─── Recurring weekday feature ────────────────────────────────────────────────
 
 /**

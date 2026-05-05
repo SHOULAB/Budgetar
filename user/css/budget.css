@@ -193,6 +193,49 @@
     letter-spacing: 0.5px;
 }
 
+/* ── Quarter card navigator tabs ─────────────────────────────────────────── */
+
+.budget-card-quarterly {
+    padding-top: 0;
+    overflow: hidden;
+}
+
+.budget-card-quarterly .quarter-nav {
+    display: flex;
+    margin: 0 0 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.quarter-nav-btn {
+    flex: 1;
+    padding: 12px 4px;
+    border: none;
+    border-right: 1px solid var(--border);
+    border-radius: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease;
+    letter-spacing: 0.4px;
+}
+
+.quarter-nav-btn:last-child {
+    border-right: none;
+}
+
+.quarter-nav-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.quarter-nav-btn.active {
+    background: transparent;
+    color: var(--primary);
+    box-shadow: inset 0 -2px 0 var(--primary);
+}
+
 /* ── Day-picker pill row ─────────────────────────────────────────────────── */
 
 .day-picker { display: flex; gap: 8px; flex-wrap: nowrap; }

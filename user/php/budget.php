@@ -157,6 +157,7 @@ function refreshRecurringBudgets($conn, $uid): void {
 
     $today = date('Y-m-d');
 
+    // ── Non-quarterly recurring budgets ──────────────────────────────────────
     $quarter_filter = $has_quarter ? " AND (quarter_label IS NULL OR quarter_label = '')" : '';
 
     $stmt = mysqli_prepare($conn,
@@ -173,7 +174,6 @@ function refreshRecurringBudgets($conn, $uid): void {
     mysqli_stmt_close($stmt);
 
     foreach ($toUpdate as $budget) {
-        // Recalculate from the day pattern rather than blindly +7
         $dates    = calcRecurringDatesPHP($budget['recurring_days']);
         $newStart = $dates['start'];
         $newEnd   = $dates['end'];
@@ -184,45 +184,52 @@ function refreshRecurringBudgets($conn, $uid): void {
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
     }
-}
 
-refreshRecurringBudgets($savienojums, $user_id);
+    // ── Quarterly recurring budgets — advance within their own quarter ────────
+    if (!$has_quarter) return;
 
-// ─── Fix existing quarterly budgets that have wrong full-quarter date ranges ──
-function fixQuarterlyBudgetDates($conn, $uid): void {
-    $check = mysqli_query($conn, "SHOW COLUMNS FROM BU_budgets LIKE 'quarter_label'");
-    if (!$check || mysqli_num_rows($check) === 0) return;
-
-    $stmt = mysqli_prepare($conn,
-        "SELECT id, start_date, quarter_label, recurring_days
+    $q_stmt = mysqli_prepare($conn,
+        "SELECT id, start_date, end_date, recurring_days, quarter_label
          FROM   BU_budgets
-         WHERE  user_id = ? AND quarter_label IS NOT NULL AND quarter_label != ''
-                AND recurring_days IS NOT NULL AND recurring_days != ''");
-    mysqli_stmt_bind_param($stmt, "i", $uid);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $toFix  = [];
-    while ($row = mysqli_fetch_assoc($result)) { $toFix[] = $row; }
-    mysqli_stmt_close($stmt);
+         WHERE  user_id = ? AND is_recurring = 1 AND end_date < ?
+                AND quarter_label IS NOT NULL AND quarter_label != ''");
+    mysqli_stmt_bind_param($q_stmt, "is", $uid, $today);
+    mysqli_stmt_execute($q_stmt);
+    $q_result  = mysqli_stmt_get_result($q_stmt);
+    $qToUpdate = [];
+    while ($row = mysqli_fetch_assoc($q_result)) { $qToUpdate[] = $row; }
+    mysqli_stmt_close($q_stmt);
 
-    $quarterStarts = ['Q1' => '-01-01', 'Q2' => '-04-01', 'Q3' => '-07-01', 'Q4' => '-10-01'];
+    $quarterRanges = [
+        'Q1' => ['-01-01', '-03-31'],
+        'Q2' => ['-04-01', '-06-30'],
+        'Q3' => ['-07-01', '-09-30'],
+        'Q4' => ['-10-01', '-12-31'],
+    ];
 
-    foreach ($toFix as $b) {
-        $ql = $b['quarter_label'];
-        if (!isset($quarterStarts[$ql])) continue;
-        $year   = substr($b['start_date'], 0, 4);
-        $qStart = $year . $quarterStarts[$ql];
-        $dates  = calcQuarterFirstOccurrences($b['recurring_days'], $qStart);
-        if ($dates['start'] === $b['start_date']) continue; // already correct
-        $upd = mysqli_prepare($conn,
-            "UPDATE BU_budgets SET start_date = ?, end_date = ? WHERE id = ?");
-        mysqli_stmt_bind_param($upd, "ssi", $dates['start'], $dates['end'], $b['id']);
-        mysqli_stmt_execute($upd);
-        mysqli_stmt_close($upd);
+    foreach ($qToUpdate as $budget) {
+        $ql = $budget['quarter_label'];
+        if (!isset($quarterRanges[$ql])) continue;
+        $year   = substr($budget['start_date'], 0, 4);
+        $qStart = $year . $quarterRanges[$ql][0];
+        $qEnd   = $year . $quarterRanges[$ql][1];
+
+        $dates    = calcRecurringDatesPHP($budget['recurring_days']);
+        $newStart = $dates['start'];
+        $newEnd   = $dates['end'];
+
+        // Only advance if the new dates still fall within this quarter
+        if ($newStart >= $qStart && $newEnd <= $qEnd) {
+            $upd = mysqli_prepare($conn,
+                "UPDATE BU_budgets SET start_date = ?, end_date = ? WHERE id = ?");
+            mysqli_stmt_bind_param($upd, "ssi", $newStart, $newEnd, $budget['id']);
+            mysqli_stmt_execute($upd);
+            mysqli_stmt_close($upd);
+        }
     }
 }
 
-fixQuarterlyBudgetDates($savienojums, $user_id);
+refreshRecurringBudgets($savienojums, $user_id);
 
 // ─── Ensure quarterly columns exist (safe migration) ─────────────────────────
 mysqli_query($savienojums, "ALTER TABLE BU_budgets ADD COLUMN IF NOT EXISTS quarter_label VARCHAR(2) NULL DEFAULT NULL");
@@ -480,6 +487,41 @@ usort($budgets, function ($a, $b) use ($today_ts) {
     return strtotime($a['start_date']) - strtotime($b['start_date']);
 });
 
+// ─── Group quarterly budgets into unified display entries ─────────────────────
+$current_month   = (int)date('n');
+$current_quarter = 'Q' . (int)ceil($current_month / 3); // Q1..Q4
+
+$display_budgets = [];
+$seen_group_ids  = [];
+
+foreach ($budgets as $bgt) {
+    $gid = $bgt['recurring_group_id'] ?? '';
+    if (!empty($gid)) {
+        if (!isset($seen_group_ids[$gid])) {
+            $seen_group_ids[$gid] = count($display_budgets);
+            $display_budgets[] = [
+                '_is_quarterly_group' => true,
+                '_group_id'           => $gid,
+                '_quarters'           => [],
+                'id'                  => $bgt['id'],
+                'budget_name'         => $bgt['budget_name'],
+                'budget_amount'       => $bgt['budget_amount'],
+                'warning_threshold'   => $bgt['warning_threshold'],
+                'recurring_days'      => $bgt['recurring_days'],
+                'start_date'          => $bgt['start_date'],
+                'end_date'            => $bgt['end_date'],
+                'spent'               => $bgt['spent'],
+                'remaining'           => $bgt['remaining'],
+                'percentage'          => $bgt['percentage'],
+            ];
+        }
+        $idx = $seen_group_ids[$gid];
+        $display_budgets[$idx]['_quarters'][$bgt['quarter_label']] = $bgt;
+    } else {
+        $display_budgets[] = array_merge($bgt, ['_is_quarterly_group' => false]);
+    }
+}
+
 // ─── Summary stats ────────────────────────────────────────────────────────────
 $total_budgets       = count($budgets);
 $active_budgets      = 0;
@@ -594,29 +636,156 @@ $total_remaining = $total_budget_amount - $total_spent;
                 </div>
             <?php else: ?>
                 <div class="budgets-grid">
-                    <?php foreach ($budgets as $budget):
-                        $is_active   = strtotime($budget['end_date'])   >= time();
-                        $is_upcoming = strtotime($budget['start_date']) >  time();
-                        $percentage  = min($budget['percentage'], 100);
+                    <?php foreach ($display_budgets as $budget):
+                        if (!empty($budget['_is_quarterly_group'])):
+                            // ── QUARTERLY GROUP CARD ──────────────────────────────────
+                            $qd_all   = $budget['_quarters'];
+                            $active_q = isset($qd_all[$current_quarter]) ? $current_quarter : array_key_first($qd_all);
+                            $aqd      = $qd_all[$active_q];
 
-                        if ($is_upcoming) {
-                            $status_class   = 'status-upcoming';
-                            $status_text    = $_t['budget.status.upcoming'] ?? 'Gaidāmais';
-                            $progress_class = 'progress-safe';
-                        } elseif (!$is_active) {
-                            $status_class   = 'status-expired';
-                            $status_text    = $_t['budget.status.expired'] ?? 'Beidzies';
-                            $progress_class = 'progress-danger';
-                        } elseif ($percentage >= $budget['warning_threshold']) {
-                            $status_class   = 'status-warning';
-                            $status_text    = $_t['budget.status.warning'] ?? 'Brīdinājums';
-                            $progress_class = 'progress-warning';
-                        } else {
-                            $status_class   = 'status-active';
-                            $status_text    = $_t['budget.status.active'] ?? 'Aktīvs';
-                            $progress_class = 'progress-safe';
-                        }
-                    ?>
+                            $aq_is_active   = strtotime($aqd['end_date'])   >= time();
+                            $aq_is_upcoming = strtotime($aqd['start_date']) >  time();
+                            $aq_percentage  = min($aqd['percentage'], 100);
+
+                            if ($aq_is_upcoming) {
+                                $status_class   = 'status-upcoming';
+                                $status_text    = $_t['budget.status.upcoming'] ?? 'Gaidāmais';
+                                $progress_class = 'progress-safe';
+                            } elseif (!$aq_is_active) {
+                                $status_class   = 'status-expired';
+                                $status_text    = $_t['budget.status.expired'] ?? 'Beidzies';
+                                $progress_class = 'progress-danger';
+                            } elseif ($aq_percentage >= $aqd['warning_threshold']) {
+                                $status_class   = 'status-warning';
+                                $status_text    = $_t['budget.status.warning'] ?? 'Brīdinājums';
+                                $progress_class = 'progress-warning';
+                            } else {
+                                $status_class   = 'status-active';
+                                $status_text    = $_t['budget.status.active'] ?? 'Aktīvs';
+                                $progress_class = 'progress-safe';
+                            }
+
+                            $quarters_for_js = [];
+                            foreach ($qd_all as $ql => $qrow) {
+                                $quarters_for_js[$ql] = [
+                                    'id'                 => $qrow['id'],
+                                    'quarter_label'      => $ql,
+                                    'start_date'         => $qrow['start_date'],
+                                    'end_date'           => $qrow['end_date'],
+                                    'budget_amount'      => $qrow['budget_amount'],
+                                    'spent'              => $qrow['spent'],
+                                    'remaining'          => $qrow['remaining'],
+                                    'percentage'         => $qrow['percentage'],
+                                    'warning_threshold'  => $qrow['warning_threshold'],
+                                    'recurring_days'     => $qrow['recurring_days'],
+                                    'budget_name'        => $qrow['budget_name'],
+                                    'budget_period'      => $qrow['budget_period'] ?? 'quarterly',
+                                    'recurring_group_id' => $qrow['recurring_group_id'],
+                                    'is_recurring'       => $qrow['is_recurring'] ?? 1,
+                                ];
+                            }
+                            $rep_id = $aqd['id'];
+                        ?>
+                        <div class="budget-card budget-card-quarterly"
+                             data-budget-title="<?php echo strtolower(htmlspecialchars($budget['budget_name'])); ?>"
+                             data-active-q="<?php echo $active_q; ?>"
+                             data-quarters-json="<?php echo htmlspecialchars(json_encode($quarters_for_js), ENT_QUOTES | ENT_HTML5); ?>">
+
+                            <div class="quarter-nav">
+                                <?php foreach (['Q1', 'Q2', 'Q3', 'Q4'] as $ql): if (isset($qd_all[$ql])): ?>
+                                <button type="button"
+                                        class="quarter-nav-btn<?php echo ($ql === $active_q) ? ' active' : ''; ?>"
+                                        data-q="<?php echo $ql; ?>"
+                                        onclick="switchQuarterTab(this.closest('.budget-card-quarterly'), '<?php echo $ql; ?>')">
+                                    <?php echo $ql; ?>
+                                </button>
+                                <?php endif; endforeach; ?>
+                            </div>
+
+                            <div class="budget-card-header">
+                                <div>
+                                    <div class="budget-card-title">
+                                        <i class="fa-solid fa-wallet"></i>
+                                        <?php echo htmlspecialchars($budget['budget_name']); ?>
+                                        <span class="recurring-card-badge">
+                                            <i class="fa-solid fa-arrows-rotate"></i>
+                                            <?php echo htmlspecialchars(recurringDayLabel($budget['recurring_days'])); ?>
+                                        </span>
+                                    </div>
+                                    <div class="budget-card-period qcard-period">
+                                        <?php echo date('d.m.Y', strtotime($aqd['start_date'])); ?> –
+                                        <?php echo date('d.m.Y', strtotime($aqd['end_date'])); ?>
+                                    </div>
+                                </div>
+                                <span class="budget-status qcard-status <?php echo $status_class; ?>">
+                                    <?php echo $status_text; ?>
+                                </span>
+                            </div>
+
+                            <div class="budget-amounts">
+                                <div class="budget-amount-row">
+                                    <span class="amount-label" data-i18n="budget.label.budget">Budžets:</span>
+                                    <span class="amount-value"><?php echo $currSymbol; ?><span class="qcard-budget-num"><?php echo number_format($aqd['budget_amount'], 2); ?></span></span>
+                                </div>
+                                <div class="budget-amount-row">
+                                    <span class="amount-label" data-i18n="budget.label.spent">Tērēts:</span>
+                                    <span class="amount-value amount-spent"><?php echo $currSymbol; ?><span class="qcard-spent-num"><?php echo number_format($aqd['spent'], 2); ?></span></span>
+                                </div>
+                                <div class="budget-amount-row">
+                                    <span class="amount-label" data-i18n="budget.label.remaining">Atlikums:</span>
+                                    <span class="amount-value amount-remaining"><?php echo $currSymbol; ?><span class="qcard-remaining-num"><?php echo number_format($aqd['remaining'], 2); ?></span></span>
+                                </div>
+                            </div>
+
+                            <div class="budget-progress">
+                                <div class="budget-progress-bar qcard-progress-bar <?php echo $progress_class; ?>"
+                                     style="width:<?php echo $aq_percentage; ?>%"></div>
+                            </div>
+                            <div style="text-align:center; color:var(--text-secondary); font-size:12px; margin-top:8px;">
+                                <span class="qcard-pct-num"><?php echo number_format($aq_percentage, 1); ?></span>% <span data-i18n="budget.label.used">izmantots</span>
+                            </div>
+
+                            <div class="budget-actions">
+                                <div style="flex:1;">
+                                    <button class="btn btn-secondary btn-small" style="width:100%;"
+                                            onclick="openEditModalFromCard(this)">
+                                        <i class="fa-solid fa-pencil"></i> <span data-i18n="budget.btn.edit">Rediģēt</span>
+                                    </button>
+                                </div>
+                                <form method="POST" style="flex:1;"
+                                      id="deleteForm_<?php echo $rep_id; ?>">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="budget_id" value="<?php echo $rep_id; ?>">
+                                    <button type="button" class="btn btn-danger btn-small" style="width:100%;"
+                                            onclick="showBudgetDeleteConfirm(this.closest('form'), true)">
+                                        <i class="fa-solid fa-trash"></i> <span data-i18n="budget.btn.delete">Dzēst</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <?php else:
+                            $is_active   = strtotime($budget['end_date'])   >= time();
+                            $is_upcoming = strtotime($budget['start_date']) >  time();
+                            $percentage  = min($budget['percentage'], 100);
+
+                            if ($is_upcoming) {
+                                $status_class   = 'status-upcoming';
+                                $status_text    = $_t['budget.status.upcoming'] ?? 'Gaidāmais';
+                                $progress_class = 'progress-safe';
+                            } elseif (!$is_active) {
+                                $status_class   = 'status-expired';
+                                $status_text    = $_t['budget.status.expired'] ?? 'Beidzies';
+                                $progress_class = 'progress-danger';
+                            } elseif ($percentage >= $budget['warning_threshold']) {
+                                $status_class   = 'status-warning';
+                                $status_text    = $_t['budget.status.warning'] ?? 'Brīdinājums';
+                                $progress_class = 'progress-warning';
+                            } else {
+                                $status_class   = 'status-active';
+                                $status_text    = $_t['budget.status.active'] ?? 'Aktīvs';
+                                $progress_class = 'progress-safe';
+                            }
+                        ?>
                         <div class="budget-card" data-budget-title="<?php echo strtolower(htmlspecialchars($budget['budget_name'])); ?>">
                             <div class="budget-card-header">
                                 <div>
@@ -681,12 +850,13 @@ $total_remaining = $total_budget_amount - $total_spent;
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="budget_id" value="<?php echo $budget['id']; ?>">
                                     <button type="button" class="btn btn-danger btn-small" style="width:100%;"
-                                            onclick="showBudgetDeleteConfirm(this.closest('form'), <?php echo !empty($budget['recurring_group_id']) ? 'true' : 'false'; ?>)">
+                                            onclick="showBudgetDeleteConfirm(this.closest('form'), false)">
                                         <i class="fa-solid fa-trash"></i> <span data-i18n="budget.btn.delete">Dzēst</span>
                                     </button>
                                 </form>
                             </div>
                         </div>
+                        <?php endif; ?>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
