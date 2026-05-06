@@ -698,6 +698,92 @@ if ($stmt) {
                     </div>
                 </form>
 
+            <!-- ── Data ──────────────────────────────────────────────────────── -->
+            <section class="settings-section">
+                <div class="settings-section-header">
+                    <div class="settings-section-icon">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div>
+                        <h2 class="settings-section-title" data-i18n="data.title">Dati</h2>
+                        <p class="settings-section-subtitle" data-i18n="data.subtitle">Importēt vai eksportēt savus datus kā CSV failu</p>
+                    </div>
+                </div>
+                <div class="settings-card">
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label" data-i18n="data.export.transactions.label">Eksportēt darījumus</span>
+                            <span class="settings-row-desc" data-i18n="data.export.transactions.desc">Lejupielādēt visus darījumus kā CSV failu</span>
+                        </div>
+                        <div class="settings-row-field">
+                            <a href="data_export.php?type=transactions" class="btn btn-secondary">
+                                <i class="fa-solid fa-download"></i>
+                                <span data-i18n="data.export.btn">Eksportēt</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="settings-divider"></div>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label" data-i18n="data.export.budgets.label">Eksportēt budžetus</span>
+                            <span class="settings-row-desc" data-i18n="data.export.budgets.desc">Lejupielādēt visus budžetus kā CSV failu</span>
+                        </div>
+                        <div class="settings-row-field">
+                            <a href="data_export.php?type=budgets" class="btn btn-secondary">
+                                <i class="fa-solid fa-download"></i>
+                                <span data-i18n="data.export.btn">Eksportēt</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="settings-divider"></div>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label" data-i18n="data.import.label">Importēt darījumus</span>
+                            <span class="settings-row-desc" data-i18n="data.import.desc">Augšupielādēt CSV failu ar darījumiem (date, amount, type, description)</span>
+                        </div>
+                        <div class="settings-row-field">
+                            <button type="button" class="btn btn-secondary" id="importCsvBtn">
+                                <i class="fa-solid fa-upload"></i>
+                                <span data-i18n="data.import.btn">Importēt</span>
+                            </button>
+                            <input type="file" id="csvFileInput" accept=".csv" style="display:none;">
+                        </div>
+                    </div>
+                    <div id="importResultRow" style="display:none;">
+                        <div class="settings-divider"></div>
+                        <div class="settings-row">
+                            <div class="settings-row-info"></div>
+                            <div class="settings-row-field">
+                                <span id="importResultText" class="settings-field-value"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-divider"></div>
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label" data-i18n="data.import.budgets.label">Importēt budžetus</span>
+                            <span class="settings-row-desc" data-i18n="data.import.budgets.desc">Augšupielādēt CSV failu ar budžetiem (budget_name, budget_amount, budget_period, start_date, end_date, warning_threshold)</span>
+                        </div>
+                        <div class="settings-row-field">
+                            <button type="button" class="btn btn-secondary" id="importBudgetsCsvBtn">
+                                <i class="fa-solid fa-upload"></i>
+                                <span data-i18n="data.import.btn">Importēt</span>
+                            </button>
+                            <input type="file" id="csvBudgetsFileInput" accept=".csv" style="display:none;">
+                        </div>
+                    </div>
+                    <div id="importBudgetsResultRow" style="display:none;">
+                        <div class="settings-divider"></div>
+                        <div class="settings-row">
+                            <div class="settings-row-info"></div>
+                            <div class="settings-row-field">
+                                <span id="importBudgetsResultText" class="settings-field-value"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
         </main>
     </div>
 
@@ -983,6 +1069,64 @@ if ($stmt) {
         saveBtn.addEventListener('click', doSave);
         newInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSave(); });
     })();
+    </script>
+    <script>
+    // ── CSV Import helper ─────────────────────────────────────────────────────
+    function _csvImport(btnId, inputId, resultRowId, resultTxtId, endpoint) {
+        var btn       = document.getElementById(btnId);
+        var input     = document.getElementById(inputId);
+        var resultRow = document.getElementById(resultRowId);
+        var resultTxt = document.getElementById(resultTxtId);
+        if (!btn || !input) return;
+
+        function t(key) {
+            if (window._i18n && window._i18n.T) {
+                var dict = window._i18n.T[window._i18n.lang] || window._i18n.T['lv'];
+                if (dict && dict[key] !== undefined) return dict[key];
+            }
+            return key;
+        }
+
+        btn.addEventListener('click', function () { input.click(); });
+
+        input.addEventListener('change', function () {
+            if (!input.files || !input.files.length) return;
+            var fd = new FormData();
+            fd.append('csv_file', input.files[0]);
+            btn.disabled = true;
+            btn.querySelector('span').textContent = t('data.import.loading');
+            fetch(endpoint, { method: 'POST', body: fd })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    btn.disabled = false;
+                    btn.querySelector('span').setAttribute('data-i18n', 'data.import.btn');
+                    btn.querySelector('span').textContent = t('data.import.btn');
+                    resultRow.style.display = '';
+                    if (data.success) {
+                        resultTxt.textContent = t('data.import.success')
+                            .replace('{imported}', data.imported)
+                            .replace('{skipped}',  data.skipped);
+                        resultTxt.style.color = 'var(--clr-success, #4caf50)';
+                    } else {
+                        var errKey = 'data.import.err.' + (data.error || 'server');
+                        resultTxt.textContent = t(errKey) !== errKey ? t(errKey) : t('data.import.err.server');
+                        resultTxt.style.color = 'var(--clr-danger, #f44336)';
+                    }
+                    input.value = '';
+                })
+                .catch(function () {
+                    btn.disabled = false;
+                    btn.querySelector('span').setAttribute('data-i18n', 'data.import.btn');
+                    btn.querySelector('span').textContent = t('data.import.btn');
+                    resultRow.style.display = '';
+                    resultTxt.textContent = t('data.import.err.server');
+                    resultTxt.style.color = 'var(--clr-danger, #f44336)';
+                    input.value = '';
+                });
+        });
+    }
+    _csvImport('importCsvBtn',        'csvFileInput',        'importResultRow',        'importResultText',        'data_import.php');
+    _csvImport('importBudgetsCsvBtn', 'csvBudgetsFileInput', 'importBudgetsResultRow', 'importBudgetsResultText', 'data_import_budgets.php');
     </script>
     <?php $active_page = 'settings'; include __DIR__ . '/mobile_nav.php'; ?>
 </body>
