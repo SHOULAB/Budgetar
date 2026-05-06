@@ -4,6 +4,11 @@
     var LS_KEY = 'budgetar_language';
     var SUPPORTED = ['lv', 'en'];
 
+    // Safety fallback: if something goes wrong, always reveal the body after 800 ms.
+    var _revealTimer = setTimeout(function () {
+        if (document.body) document.body.classList.add('i18n-ready');
+    }, 800);
+
     function applyTranslations(T, lang) {
         var dict = T[lang] || T['lv'];
         document.querySelectorAll('[data-i18n]').forEach(function (el) {
@@ -42,10 +47,16 @@
         localStorage.setItem(LS_KEY, lang);
     }
 
+    function revealBody() {
+        clearTimeout(_revealTimer);
+        if (document.body) document.body.classList.add('i18n-ready');
+    }
+
     if (window._i18nData) {
         // Translation data was inlined by PHP — apply synchronously, no flash.
         applyTranslations(window._i18nData, lang);
         window._i18n = { T: window._i18nData, lang: lang, apply: applyTranslations };
+        revealBody();
     } else {
         // Fallback: fetch the JSON file (only when no inline data is present).
         fetch('../php/translate.json')
@@ -53,6 +64,8 @@
             .then(function (T) {
                 window._i18n = { T: T, lang: lang, apply: applyTranslations };
                 applyTranslations(T, lang);
-            });
+                revealBody();
+            })
+            .catch(revealBody); // Show body even if fetch fails
     }
 })();

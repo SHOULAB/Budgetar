@@ -1,5 +1,11 @@
 /* style.css — Global base styles: variables, reset, buttons, homepage, auth */
 
+/* Prevent flash of untranslated Latvian content — body stays hidden until
+   language.js applies translations and adds the i18n-ready class. */
+body:not(.i18n-ready) {
+    visibility: hidden;
+}
+
 * {
     margin: 0;
     padding: 0;
