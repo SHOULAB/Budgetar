@@ -783,7 +783,7 @@ if ($stmt) {
                     <div class="settings-row">
                         <div class="settings-row-info">
                             <span class="settings-row-label" data-i18n="data.import.budgets.label">Importēt budžetus</span>
-                            <span class="settings-row-desc" data-i18n="data.import.budgets.desc">Augšupielādēt CSV failu ar budžetiem (budget_name, budget_amount, budget_period, start_date, end_date, warning_threshold)</span>
+                            <span class="settings-row-desc" data-i18n="data.import.budgets.desc">Augšupielādēt CSV failu ar budžetiem (budget_name, budget_amount, budget_period, start_date, end_date)</span>
                         </div>
                         <div class="settings-row-field">
                             <button type="button" class="btn btn-secondary" id="importBudgetsCsvBtn">

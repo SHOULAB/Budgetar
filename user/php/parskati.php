@@ -56,6 +56,28 @@ $_lang = $_SESSION['language'];
 $_traw = json_decode(file_get_contents(__DIR__ . '/translate.json'), true) ?? [];
 $_t    = $_traw[$_lang] ?? $_traw['lv'] ?? [];
 
+// --- Fetch all transactions once, then derive all stats in PHP ---
+// (Amounts are AES-256-CBC encrypted; SQL-level SUM is not possible.)
+
+$_stopColCheck = mysqli_query($savienojums, "SHOW COLUMNS FROM BU_transactions LIKE 'recurring_stop_date'");
+$_hasStopCol   = ($_stopColCheck && mysqli_num_rows($_stopColCheck) > 0);
+
+$_tx_query = $_hasStopCol
+    ? "SELECT date, type, amount, is_recurring, recurring_stop_date FROM BU_transactions WHERE user_id = ?"
+    : "SELECT date, type, amount, is_recurring FROM BU_transactions WHERE user_id = ?";
+
+$_tx_stmt = mysqli_prepare($savienojums, $_tx_query);
+mysqli_stmt_bind_param($_tx_stmt, "i", $user_id);
+mysqli_stmt_execute($_tx_stmt);
+$_tx_res = mysqli_stmt_get_result($_tx_stmt);
+
+$_all_tx = [];
+while ($_tx_row = mysqli_fetch_assoc($_tx_res)) {
+    $_tx_row['amount'] = floatval(decrypt_value($_tx_row['amount']));
+    $_all_tx[] = $_tx_row;
+}
+mysqli_stmt_close($_tx_stmt);
+
 // --- 1. Monthly income vs expenses (last 12 months) ---
 $monthly_data = [];
 for ($i = 11; $i >= 0; $i--) {
@@ -65,36 +87,27 @@ for ($i = 11; $i >= 0; $i--) {
     $monthly_data[] = ['month' => $m, 'year' => $y, 'label' => date('M Y', $ts), 'income' => 0, 'expense' => 0];
 }
 
-$stmt = mysqli_prepare($savienojums,
-    "SELECT MONTH(date) as m, YEAR(date) as y, type, SUM(amount) as total
-     FROM BU_transactions
-     WHERE user_id = ? AND date >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 11 MONTH), '%Y-%m-01')
-     GROUP BY YEAR(date), MONTH(date), type");
-mysqli_stmt_bind_param($stmt, "i", $user_id);
-mysqli_stmt_execute($stmt);
-$res = mysqli_stmt_get_result($stmt);
-while ($row = mysqli_fetch_assoc($res)) {
+$window_start = date('Y-m-01', strtotime('-11 months'));
+foreach ($_all_tx as $_tx) {
+    if ($_tx['date'] < $window_start) continue;
+    $_m = (int)date('n', strtotime($_tx['date']));
+    $_y = (int)date('Y', strtotime($_tx['date']));
     foreach ($monthly_data as &$md) {
-        if ($md['month'] == $row['m'] && $md['year'] == $row['y']) {
-            $md[$row['type']] = floatval($row['total']);
+        if ($md['month'] === $_m && $md['year'] === $_y) {
+            $md[$_tx['type']] += $_tx['amount'];
+            break;
         }
     }
+    unset($md);
 }
-mysqli_stmt_close($stmt);
-unset($md);
 
 // --- 2. Running balance over last 12 months ---
 $running_balance = 0;
-$window_start = date('Y-m-01', strtotime('-11 months'));
-$stmt2 = mysqli_prepare($savienojums,
-    "SELECT type, SUM(amount) as total FROM BU_transactions WHERE user_id = ? AND date < ? GROUP BY type");
-mysqli_stmt_bind_param($stmt2, "is", $user_id, $window_start);
-mysqli_stmt_execute($stmt2);
-$res2 = mysqli_stmt_get_result($stmt2);
-while ($row = mysqli_fetch_assoc($res2)) {
-    $running_balance += ($row['type'] === 'income' ? 1 : -1) * floatval($row['total']);
+foreach ($_all_tx as $_tx) {
+    if ($_tx['date'] < $window_start) {
+        $running_balance += ($_tx['type'] === 'income' ? 1 : -1) * $_tx['amount'];
+    }
 }
-mysqli_stmt_close($stmt2);
 
 $balance_trend = [];
 foreach ($monthly_data as $md) {
@@ -103,51 +116,21 @@ foreach ($monthly_data as $md) {
 }
 
 // --- 3. Recurring vs one-time ---
-// A stopped recurring transaction (recurring_stop_date set and in the past) is treated as
-// one-time for the donut so only currently-active recurring amounts are counted as "monthly".
-$_stopColCheck = mysqli_query($savienojums, "SHOW COLUMNS FROM BU_transactions LIKE 'recurring_stop_date'");
-$_hasStopCol   = ($_stopColCheck && mysqli_num_rows($_stopColCheck) > 0);
-
 $_today = date('Y-m-d');
-if ($_hasStopCol) {
-    // Treat any recurring row whose stop date is already past as one-time
-    $stmt3 = mysqli_prepare($savienojums,
-        "SELECT
-             CASE WHEN is_recurring = 1
-                       AND (recurring_stop_date IS NULL OR recurring_stop_date >= ?)
-                  THEN 1 ELSE 0 END AS is_recurring,
-             type,
-             SUM(amount) as total
-         FROM BU_transactions
-         WHERE user_id = ?
-         GROUP BY 1, type");
-    mysqli_stmt_bind_param($stmt3, "si", $_today, $user_id);
-} else {
-    $stmt3 = mysqli_prepare($savienojums,
-        "SELECT is_recurring, type, SUM(amount) as total FROM BU_transactions WHERE user_id = ? GROUP BY is_recurring, type");
-    mysqli_stmt_bind_param($stmt3, "i", $user_id);
-}
-mysqli_stmt_execute($stmt3);
-$res3 = mysqli_stmt_get_result($stmt3);
 $rec = ['recurring_income' => 0, 'recurring_expense' => 0, 'onetime_income' => 0, 'onetime_expense' => 0];
-while ($row = mysqli_fetch_assoc($res3)) {
-    $key = ($row['is_recurring'] ? 'recurring' : 'onetime') . '_' . $row['type'];
-    $rec[$key] += floatval($row['total']);
+foreach ($_all_tx as $_tx) {
+    $_is_rec = $_tx['is_recurring'] == 1
+        && (!$_hasStopCol || empty($_tx['recurring_stop_date']) || $_tx['recurring_stop_date'] >= $_today);
+    $key = ($_is_rec ? 'recurring' : 'onetime') . '_' . $_tx['type'];
+    $rec[$key] += $_tx['amount'];
 }
-mysqli_stmt_close($stmt3);
 
 // --- 4. All-time summary stats ---
-$stmt4 = mysqli_prepare($savienojums,
-    "SELECT type, SUM(amount) as total, COUNT(*) as cnt FROM BU_transactions WHERE user_id = ? GROUP BY type");
-mysqli_stmt_bind_param($stmt4, "i", $user_id);
-mysqli_stmt_execute($stmt4);
-$res4 = mysqli_stmt_get_result($stmt4);
 $alltime = ['income' => 0, 'expense' => 0, 'income_count' => 0, 'expense_count' => 0];
-while ($row = mysqli_fetch_assoc($res4)) {
-    $alltime[$row['type']]            = floatval($row['total']);
-    $alltime[$row['type'] . '_count'] = intval($row['cnt']);
+foreach ($_all_tx as $_tx) {
+    $alltime[$_tx['type']]            += $_tx['amount'];
+    $alltime[$_tx['type'] . '_count'] += 1;
 }
-mysqli_stmt_close($stmt4);
 $alltime_balance = $alltime['income'] - $alltime['expense'];
 $savings_rate    = $alltime['income'] > 0 ? round(($alltime_balance / $alltime['income']) * 100, 1) : 0;
 

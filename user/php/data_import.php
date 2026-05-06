@@ -124,8 +124,10 @@ while (($row = fgetcsv($handle)) !== false) {
         "INSERT INTO BU_transactions (user_id, date, amount, type, description, is_recurring)
          VALUES (?, ?, ?, ?, ?, ?)");
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, "isdssi",
-            $user_id, $date, $amount, $type, $description, $is_recurring);
+        $enc_amount      = encrypt_value(strval($amount));
+        $enc_description = encrypt_value($description);
+        mysqli_stmt_bind_param($stmt, "issssi",
+            $user_id, $date, $enc_amount, $type, $enc_description, $is_recurring);
         if (mysqli_stmt_execute($stmt)) {
             $imported++;
         } else {

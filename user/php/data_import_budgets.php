@@ -62,7 +62,7 @@ if (!$header) {
 }
 
 $header = array_map('trim', $header);
-$required = ['budget_name', 'budget_amount', 'budget_period', 'start_date', 'end_date', 'warning_threshold'];
+$required = ['budget_name', 'budget_amount', 'budget_period', 'start_date', 'end_date'];
 foreach ($required as $col) {
     if (!in_array($col, $header, true)) {
         fclose($handle);
@@ -76,7 +76,6 @@ $amtIdx       = array_search('budget_amount',      $header, true);
 $periodIdx    = array_search('budget_period',      $header, true);
 $startIdx     = array_search('start_date',         $header, true);
 $endIdx       = array_search('end_date',           $header, true);
-$warnIdx      = array_search('warning_threshold',  $header, true);
 $recurIdx     = array_search('is_recurring',       $header, true);
 $recurDaysIdx = array_search('recurring_days',     $header, true);
 $qlabelIdx    = array_search('quarter_label',      $header, true);
@@ -91,16 +90,15 @@ $skipped = 0;
 while (($row = fgetcsv($handle)) !== false) {
     if (count($row) < 6) { $skipped++; continue; }
 
-    $budget_name       = mb_substr(trim($row[$nameIdx] ?? ''), 0, 255);
-    $budget_amount     = floatval($row[$amtIdx] ?? 0);
-    $budget_period     = trim($row[$periodIdx] ?? '');
-    $start_date        = trim($row[$startIdx] ?? '');
-    $end_date          = trim($row[$endIdx] ?? '');
-    $warning_threshold = floatval($row[$warnIdx] ?? 80);
-    $is_recurring      = ($recurIdx !== false)     ? intval($row[$recurIdx] ?? 0)       : 0;
-    $recurring_days    = ($recurDaysIdx !== false)  ? trim($row[$recurDaysIdx] ?? '')    : '';
-    $quarter_label     = ($qlabelIdx !== false)     ? trim($row[$qlabelIdx] ?? '')       : '';
-    $old_group_id      = ($groupIdx !== false)      ? trim($row[$groupIdx] ?? '')        : '';
+    $budget_name    = mb_substr(trim($row[$nameIdx] ?? ''), 0, 255);
+    $budget_amount  = floatval($row[$amtIdx] ?? 0);
+    $budget_period  = trim($row[$periodIdx] ?? '');
+    $start_date     = trim($row[$startIdx] ?? '');
+    $end_date       = trim($row[$endIdx] ?? '');
+    $is_recurring   = ($recurIdx !== false)     ? intval($row[$recurIdx] ?? 0)       : 0;
+    $recurring_days = ($recurDaysIdx !== false)  ? trim($row[$recurDaysIdx] ?? '')    : '';
+    $quarter_label  = ($qlabelIdx !== false)     ? trim($row[$qlabelIdx] ?? '')       : '';
+    $old_group_id   = ($groupIdx !== false)      ? trim($row[$groupIdx] ?? '')        : '';
 
     if ($budget_name === '')  { $skipped++; continue; }
     if ($budget_amount <= 0)  { $skipped++; continue; }
@@ -117,8 +115,6 @@ while (($row = fgetcsv($handle)) !== false) {
 
     if ($end_date < $start_date) { $skipped++; continue; }
 
-    $warning_threshold = max(0, min(100, $warning_threshold));
-
     // Only carry a quarter_label if this row is actually recurring
     if (!$is_recurring) { $quarter_label = ''; $old_group_id = ''; }
     // Validate quarter_label value
@@ -127,16 +123,15 @@ while (($row = fgetcsv($handle)) !== false) {
     }
 
     $rows[] = [
-        'budget_name'       => $budget_name,
-        'budget_amount'     => $budget_amount,
-        'budget_period'     => $budget_period,
-        'start_date'        => $start_date,
-        'end_date'          => $end_date,
-        'warning_threshold' => $warning_threshold,
-        'is_recurring'      => $is_recurring,
-        'recurring_days'    => $recurring_days,
-        'quarter_label'     => $quarter_label,
-        'old_group_id'      => $old_group_id,
+        'budget_name'    => $budget_name,
+        'budget_amount'  => $budget_amount,
+        'budget_period'  => $budget_period,
+        'start_date'     => $start_date,
+        'end_date'       => $end_date,
+        'is_recurring'   => $is_recurring,
+        'recurring_days' => $recurring_days,
+        'quarter_label'  => $quarter_label,
+        'old_group_id'   => $old_group_id,
     ];
 }
 fclose($handle);
@@ -168,20 +163,22 @@ unset($r);
 $imported = 0;
 
 foreach ($rows as $r) {
-    $ql  = $r['quarter_label'] !== '' ? $r['quarter_label'] : null;
-    $gid = $r['new_group_id']  !== '' ? $r['new_group_id']  : null;
+    $ql       = $r['quarter_label'] !== '' ? $r['quarter_label'] : null;
+    $gid      = $r['new_group_id']  !== '' ? $r['new_group_id']  : null;
+    $enc_name = encrypt_value($r['budget_name']);
+    $enc_amt  = encrypt_value(strval($r['budget_amount']));
 
     $stmt = mysqli_prepare($savienojums,
         "INSERT INTO BU_budgets
             (user_id, budget_name, budget_amount, budget_period,
-             start_date, end_date, warning_threshold,
+             start_date, end_date,
              recurring_days, is_recurring, quarter_label,
              recurring_group_id, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, "isdsssdsiss",
-            $user_id, $r['budget_name'], $r['budget_amount'], $r['budget_period'],
-            $r['start_date'], $r['end_date'], $r['warning_threshold'],
+        mysqli_stmt_bind_param($stmt, "isssssiss",
+            $user_id, $enc_name, $enc_amt, $r['budget_period'],
+            $r['start_date'], $r['end_date'],
             $r['recurring_days'], $r['is_recurring'], $ql, $gid);
         if (mysqli_stmt_execute($stmt)) {
             $imported++;
@@ -231,7 +228,7 @@ if (!$header) {
 }
 
 $header = array_map('trim', $header);
-$required = ['budget_name', 'budget_amount', 'budget_period', 'start_date', 'end_date', 'warning_threshold'];
+$required = ['budget_name', 'budget_amount', 'budget_period', 'start_date', 'end_date'];
 foreach ($required as $col) {
     if (!in_array($col, $header, true)) {
         fclose($handle);
@@ -240,14 +237,13 @@ foreach ($required as $col) {
     }
 }
 
-$nameIdx      = array_search('budget_name',       $header, true);
-$amtIdx       = array_search('budget_amount',     $header, true);
-$periodIdx    = array_search('budget_period',     $header, true);
-$startIdx     = array_search('start_date',        $header, true);
-$endIdx       = array_search('end_date',          $header, true);
-$warnIdx      = array_search('warning_threshold', $header, true);
-$recurIdx     = array_search('is_recurring',      $header, true);
-$recurDaysIdx = array_search('recurring_days',    $header, true);
+$nameIdx      = array_search('budget_name',      $header, true);
+$amtIdx       = array_search('budget_amount',    $header, true);
+$periodIdx    = array_search('budget_period',    $header, true);
+$startIdx     = array_search('start_date',       $header, true);
+$endIdx       = array_search('end_date',         $header, true);
+$recurIdx     = array_search('is_recurring',     $header, true);
+$recurDaysIdx = array_search('recurring_days',   $header, true);
 
 $allowed_periods = ['daily', 'weekly', 'monthly', 'yearly', 'custom'];
 
@@ -273,14 +269,13 @@ $valid_rows = [];
 while (($row = fgetcsv($handle)) !== false) {
     if (count($row) < 6) { $skipped++; continue; }
 
-    $budget_name       = mb_substr(trim($row[$nameIdx] ?? ''), 0, 255);
-    $budget_amount     = floatval($row[$amtIdx] ?? 0);
-    $budget_period     = trim($row[$periodIdx] ?? '');
-    $start_date        = trim($row[$startIdx] ?? '');
-    $end_date          = trim($row[$endIdx] ?? '');
-    $warning_threshold = floatval($row[$warnIdx] ?? 80);
-    $is_recurring      = ($recurIdx !== false) ? intval($row[$recurIdx] ?? 0) : 0;
-    $recurring_days    = ($recurDaysIdx !== false) ? trim($row[$recurDaysIdx] ?? '') : '';
+    $budget_name    = mb_substr(trim($row[$nameIdx] ?? ''), 0, 255);
+    $budget_amount  = floatval($row[$amtIdx] ?? 0);
+    $budget_period  = trim($row[$periodIdx] ?? '');
+    $start_date     = trim($row[$startIdx] ?? '');
+    $end_date       = trim($row[$endIdx] ?? '');
+    $is_recurring   = ($recurIdx !== false) ? intval($row[$recurIdx] ?? 0) : 0;
+    $recurring_days = ($recurDaysIdx !== false) ? trim($row[$recurDaysIdx] ?? '') : '';
 
     if ($budget_name === '') { $skipped++; continue; }
     if ($budget_amount <= 0) { $skipped++; continue; }
@@ -298,11 +293,9 @@ while (($row = fgetcsv($handle)) !== false) {
     if (!$date_ok) { $skipped++; continue; }
     if ($end_date < $start_date) { $skipped++; continue; }
 
-    $warning_threshold = max(0, min(100, $warning_threshold));
-
     $valid_rows[] = compact(
         'budget_name', 'budget_amount', 'budget_period',
-        'start_date', 'end_date', 'warning_threshold',
+        'start_date', 'end_date',
         'is_recurring', 'recurring_days'
     );
 }
@@ -332,17 +325,20 @@ foreach ($valid_rows as $r) {
         $budget_period = $r['budget_period'];
     }
 
+    $enc_name = encrypt_value($r['budget_name']);
+    $enc_amt  = encrypt_value(strval($r['budget_amount']));
+
     $stmt = mysqli_prepare($savienojums,
         "INSERT INTO BU_budgets
             (user_id, budget_name, budget_amount, budget_period,
-             start_date, end_date, warning_threshold,
+             start_date, end_date,
              recurring_days, is_recurring, quarter_label,
              recurring_group_id, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, "isdsssdsiss",
-            $user_id, $r['budget_name'], $r['budget_amount'], $budget_period,
-            $r['start_date'], $r['end_date'], $r['warning_threshold'],
+        mysqli_stmt_bind_param($stmt, "isssssiss",
+            $user_id, $enc_name, $enc_amt, $budget_period,
+            $r['start_date'], $r['end_date'],
             $r['recurring_days'], $r['is_recurring'], $quarter_label,
             $recurring_group_id);
         if (mysqli_stmt_execute($stmt)) {

@@ -28,11 +28,11 @@ $out = fopen('php://output', 'w');
 fwrite($out, "\xEF\xBB\xBF");
 
 if ($type === 'budgets') {
-    fputcsv($out, ['budget_name', 'budget_amount', 'budget_period', 'start_date', 'end_date', 'warning_threshold', 'is_recurring', 'recurring_days', 'quarter_label', 'recurring_group_id']);
+    fputcsv($out, ['budget_name', 'budget_amount', 'budget_period', 'start_date', 'end_date', 'is_recurring', 'recurring_days', 'quarter_label', 'recurring_group_id']);
 
     $stmt = mysqli_prepare($savienojums,
         "SELECT budget_name, budget_amount, budget_period, start_date, end_date,
-                warning_threshold, is_recurring, COALESCE(recurring_days, '') AS recurring_days,
+                is_recurring, COALESCE(recurring_days, '') AS recurring_days,
                 COALESCE(quarter_label, '') AS quarter_label,
                 COALESCE(recurring_group_id, '') AS recurring_group_id
          FROM BU_budgets
@@ -43,6 +43,8 @@ if ($type === 'budgets') {
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         while ($row = mysqli_fetch_assoc($res)) {
+            $row['budget_name']   = decrypt_value($row['budget_name']);
+            $row['budget_amount'] = floatval(decrypt_value($row['budget_amount']));
             fputcsv($out, array_values($row));
         }
         mysqli_stmt_close($stmt);
@@ -62,6 +64,8 @@ if ($type === 'budgets') {
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         while ($row = mysqli_fetch_assoc($res)) {
+            $row['amount']      = floatval(decrypt_value($row['amount']));
+            $row['description'] = decrypt_value($row['description']);
             fputcsv($out, array_values($row));
         }
         mysqli_stmt_close($stmt);

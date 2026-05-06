@@ -115,9 +115,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_transaction'])) {
     $ignore_budget = ($type === 'expense' && isset($_POST['ignore_budget'])) ? 1 : 0;
 
     if (!empty($date) && $amount > 0) {
+        $enc_amount      = encrypt_value(strval($amount));
+        $enc_description = encrypt_value($description);
         $stmt = mysqli_prepare($savienojums, "INSERT INTO BU_transactions (user_id, date, amount, type, description, is_recurring, ignore_budget) VALUES (?, ?, ?, ?, ?, ?, ?)");
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, "isdssii", $user_id, $date, $amount, $type, $description, $is_recurring, $ignore_budget);
+            mysqli_stmt_bind_param($stmt, "issssii", $user_id, $date, $enc_amount, $type, $enc_description, $is_recurring, $ignore_budget);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
 
@@ -141,10 +143,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_income'])) {
     $is_recurring = isset($_POST['is_recurring']) ? 1 : 0;
     
     if (!empty($date) && $amount > 0) {
+        $enc_amount      = encrypt_value(strval($amount));
+        $enc_description = encrypt_value($description);
         $stmt = mysqli_prepare($savienojums, "INSERT INTO BU_transactions (user_id, date, amount, type, description, is_recurring) VALUES (?, ?, ?, 'income', ?, ?)");
         
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, "isdsi", $user_id, $date, $amount, $description, $is_recurring);
+            mysqli_stmt_bind_param($stmt, "isssi", $user_id, $date, $enc_amount, $enc_description, $is_recurring);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
             
@@ -168,10 +172,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_expense'])) {
     $is_recurring = isset($_POST['is_recurring_expense']) ? 1 : 0;
     
     if (!empty($date) && $amount > 0) {
+        $enc_amount      = encrypt_value(strval($amount));
+        $enc_description = encrypt_value($description);
         $stmt = mysqli_prepare($savienojums, "INSERT INTO BU_transactions (user_id, date, amount, type, description, is_recurring) VALUES (?, ?, ?, 'expense', ?, ?)");
         
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, "isdsi", $user_id, $date, $amount, $description, $is_recurring);
+            mysqli_stmt_bind_param($stmt, "isssi", $user_id, $date, $enc_amount, $enc_description, $is_recurring);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
             
@@ -296,6 +302,8 @@ $result = mysqli_stmt_get_result($stmt);
 
 $transactions = [];
 while ($row = mysqli_fetch_assoc($result)) {
+    $row['amount']      = floatval(decrypt_value($row['amount']));
+    $row['description'] = decrypt_value($row['description']);
     $day = date('j', strtotime($row['date']));
     if (!isset($transactions[$day])) {
         $transactions[$day] = [];
@@ -326,6 +334,8 @@ $recurring_result = mysqli_stmt_get_result($stmt_recurring);
 $current_view_key = sprintf('%04d-%02d', $current_year, $current_month);
 
 while ($row = mysqli_fetch_assoc($recurring_result)) {
+    $row['amount']      = floatval(decrypt_value($row['amount']));
+    $row['description'] = decrypt_value($row['description']);
     // Skip if this month is in the skip list
     if (!empty($row['recurring_skip_months'])) {
         $skipped = array_map('trim', explode(',', $row['recurring_skip_months']));
@@ -364,7 +374,7 @@ foreach ($transactions as $day_transactions) {
 $balance = $total_income - $total_expense;
 
 // Calculate carried balance from ALL months before the current one
-$stmt_carried = mysqli_prepare($savienojums, "SELECT type, SUM(amount) as total FROM BU_transactions WHERE user_id = ? AND date < ? GROUP BY type");
+$stmt_carried = mysqli_prepare($savienojums, "SELECT type, amount FROM BU_transactions WHERE user_id = ? AND date < ?");
 mysqli_stmt_bind_param($stmt_carried, "is", $user_id, $first_day);
 mysqli_stmt_execute($stmt_carried);
 $carried_result = mysqli_stmt_get_result($stmt_carried);
@@ -372,10 +382,11 @@ $carried_result = mysqli_stmt_get_result($stmt_carried);
 $carried_income = 0;
 $carried_expense = 0;
 while ($carried_row = mysqli_fetch_assoc($carried_result)) {
+    $dec_amt = floatval(decrypt_value($carried_row['amount']));
     if ($carried_row['type'] === 'income') {
-        $carried_income = $carried_row['total'];
+        $carried_income += $dec_amt;
     } else {
-        $carried_expense = $carried_row['total'];
+        $carried_expense += $dec_amt;
     }
 }
 mysqli_stmt_close($stmt_carried);
@@ -412,7 +423,7 @@ $budgets_table_ready = ($col_check && mysqli_num_rows($col_check) > 0);
 if ($budgets_table_ready) {
     $bstmt = mysqli_prepare($savienojums,
         "SELECT id, budget_name, budget_amount, start_date, end_date,
-                warning_threshold, recurring_days
+                recurring_days
          FROM   BU_budgets
          WHERE  user_id = ? AND end_date >= CURDATE()
          ORDER  BY start_date ASC");
@@ -420,28 +431,31 @@ if ($budgets_table_ready) {
     mysqli_stmt_execute($bstmt);
     $bres = mysqli_stmt_get_result($bstmt);
     while ($brow = mysqli_fetch_assoc($bres)) {
+        $brow['budget_name']   = decrypt_value($brow['budget_name']);
+        $brow['budget_amount'] = floatval(decrypt_value($brow['budget_amount']));
+
         // Calculate how much has already been spent against this budget.
         // For recurring budgets with specific weekdays, only count expenses
         // that fall on those days so the threshold check is accurate.
         $recurring_days_csv = $brow['recurring_days'] ?? '';
         if ($recurring_days_csv !== '') {
             // Convert JS day indices (0=Sun…6=Sat) to MySQL DAYOFWEEK values (1=Sun…7=Sat)
-            $js_days   = array_filter(array_map('intval', explode(',', $recurring_days_csv)), fn($d) => $d >= 0 && $d <= 6);
-            $mysql_days = array_values(array_map(fn($d) => $d + 1, $js_days)); // JS 0→1,…,6→7
+            $js_days    = array_filter(array_map('intval', explode(',', $recurring_days_csv)), fn($d) => $d >= 0 && $d <= 6);
+            $mysql_days = array_values(array_map(fn($d) => $d + 1, $js_days));
             $placeholders = implode(',', array_fill(0, count($mysql_days), '?'));
             $sstmt = mysqli_prepare($savienojums,
-                "SELECT COALESCE(SUM(amount), 0) AS spent
+                "SELECT amount
                  FROM   BU_transactions
                  WHERE  user_id = ? AND type = 'expense'
                    AND  date BETWEEN ? AND ?
                    AND  DAYOFWEEK(date) IN ({$placeholders})
                    AND  ignore_budget = 0");
-            $types = 'iss' . str_repeat('i', count($mysql_days));
+            $types     = 'iss' . str_repeat('i', count($mysql_days));
             $bind_args = array_merge([$user_id, $brow['start_date'], $brow['end_date']], $mysql_days);
             mysqli_stmt_bind_param($sstmt, $types, ...$bind_args);
         } else {
             $sstmt = mysqli_prepare($savienojums,
-                "SELECT COALESCE(SUM(amount), 0) AS spent
+                "SELECT amount
                  FROM   BU_transactions
                  WHERE  user_id = ? AND type = 'expense'
                    AND  date BETWEEN ? AND ?
@@ -450,11 +464,15 @@ if ($budgets_table_ready) {
                 $user_id, $brow['start_date'], $brow['end_date']);
         }
         mysqli_stmt_execute($sstmt);
-        $srow  = mysqli_fetch_assoc(mysqli_stmt_get_result($sstmt));
+        $sres = mysqli_stmt_get_result($sstmt);
+        $spent = 0.0;
+        while ($srow = mysqli_fetch_assoc($sres)) {
+            $spent += floatval(decrypt_value($srow['amount']));
+        }
         mysqli_stmt_close($sstmt);
 
-        $brow['spent']     = floatval($srow['spent']);
-        $brow['remaining'] = $brow['budget_amount'] - $brow['spent'];
+        $brow['spent']     = $spent;
+        $brow['remaining'] = $brow['budget_amount'] - $spent;
         $activeBudgets[]   = $brow;
     }
     mysqli_stmt_close($bstmt);

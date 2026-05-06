@@ -276,10 +276,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     // ── ADD ──────────────────────────────────────────────────────────────────
     if ($action === 'add') {
-        $budget_name       = trim($_POST['budget_name'] ?? '');
-        $budget_amount     = floatval($_POST['budget_amount'] ?? 0);
-        $budget_period     = $_POST['budget_period'] ?? 'monthly';
-        $warning_threshold = floatval($_POST['warning_threshold'] ?? 80);
+        $budget_name   = trim($_POST['budget_name'] ?? '');
+        $budget_amount = floatval($_POST['budget_amount'] ?? 0);
+        $budget_period = $_POST['budget_period'] ?? 'monthly';
 
         $recurring_days = trim($_POST['recurring_days'] ?? '');
         $is_recurring   = ($recurring_days !== '') ? 1 : 0;
@@ -306,16 +305,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $q_start = $q_dates['start'];
                 $q_end   = $q_dates['end'];
 
+                $enc_name   = encrypt_value($budget_name);
+                $enc_amount = encrypt_value(strval($budget_amount));
                 $stmt = mysqli_prepare($savienojums,
                     "INSERT INTO BU_budgets
                         (user_id, budget_name, budget_amount, budget_period,
-                         start_date, end_date, warning_threshold,
+                         start_date, end_date,
                          recurring_days, is_recurring, quarter_label,
                          recurring_group_id, created_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-                mysqli_stmt_bind_param($stmt, "isdsssdsiss",
-                    $user_id, $budget_name, $budget_amount, $period,
-                    $q_start, $q_end, $warning_threshold,
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+                mysqli_stmt_bind_param($stmt, "issssssiss",
+                    $user_id, $enc_name, $enc_amount, $period,
+                    $q_start, $q_end,
                     $recurring_days, $is_recurring, $q_label, $group_id);
 
                 if (!mysqli_stmt_execute($stmt)) $all_ok = false;
@@ -337,15 +338,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             } elseif ($end_date < $start_date) {
                 $error = 'Beigu datums nevar būt pirms sākuma datuma!';
             } else {
+                $enc_name   = encrypt_value($budget_name);
+                $enc_amount = encrypt_value(strval($budget_amount));
                 $stmt = mysqli_prepare($savienojums,
                     "INSERT INTO BU_budgets
                         (user_id, budget_name, budget_amount, budget_period,
-                         start_date, end_date, warning_threshold,
+                         start_date, end_date,
                          recurring_days, is_recurring, created_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-                mysqli_stmt_bind_param($stmt, "isdsssdsi",
-                    $user_id, $budget_name, $budget_amount, $budget_period,
-                    $start_date, $end_date, $warning_threshold,
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+                mysqli_stmt_bind_param($stmt, "issssssi",
+                    $user_id, $enc_name, $enc_amount, $budget_period,
+                    $start_date, $end_date,
                     $recurring_days, $is_recurring);
 
                 if (mysqli_stmt_execute($stmt)) {
@@ -395,10 +398,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     // ── UPDATE ────────────────────────────────────────────────────────────────
     if ($action === 'update' && isset($_POST['budget_id'])) {
-        $budget_id         = intval($_POST['budget_id']);
-        $budget_name       = trim($_POST['budget_name'] ?? '');
-        $budget_amount     = floatval($_POST['budget_amount'] ?? 0);
-        $warning_threshold = floatval($_POST['warning_threshold'] ?? 80);
+        $budget_id     = intval($_POST['budget_id']);
+        $budget_name   = trim($_POST['budget_name'] ?? '');
+        $budget_amount = floatval($_POST['budget_amount'] ?? 0);
 
         $recurring_days = trim($_POST['recurring_days'] ?? '');
         $is_recurring   = ($recurring_days !== '') ? 1 : 0;
@@ -420,24 +422,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if (!empty($budget_info['is_recurring']) && empty($recurring_days)) {
             $error = 'Vismaz viena nedēļas diena ir obligāta!';
         } else {
+        $enc_name   = encrypt_value($budget_name);
+        $enc_amount = encrypt_value(strval($budget_amount));
+
         if (!empty($budget_info['recurring_group_id'])) {
             $gid  = $budget_info['recurring_group_id'];
             $stmt = mysqli_prepare($savienojums,
                 "UPDATE BU_budgets
-                 SET budget_name = ?, budget_amount = ?, warning_threshold = ?,
+                 SET budget_name = ?, budget_amount = ?,
                      recurring_days = ?
                  WHERE recurring_group_id = ? AND user_id = ?");
-            mysqli_stmt_bind_param($stmt, "sddssi",
-                $budget_name, $budget_amount, $warning_threshold,
+            mysqli_stmt_bind_param($stmt, "ssssi",
+                $enc_name, $enc_amount,
                 $recurring_days, $gid, $user_id);
         } else {
             $stmt = mysqli_prepare($savienojums,
                 "UPDATE BU_budgets
-                 SET budget_name = ?, budget_amount = ?, warning_threshold = ?,
+                 SET budget_name = ?, budget_amount = ?,
                      recurring_days = ?, is_recurring = ?
                  WHERE id = ? AND user_id = ?");
-            mysqli_stmt_bind_param($stmt, "sddsiii",
-                $budget_name, $budget_amount, $warning_threshold,
+            mysqli_stmt_bind_param($stmt, "sssiii",
+                $enc_name, $enc_amount,
                 $recurring_days, $is_recurring,
                 $budget_id, $user_id);
         }
@@ -464,34 +469,40 @@ $budgets_result = mysqli_stmt_get_result($stmt);
 $budgets = [];
 if ($budgets_result) {
     while ($row = mysqli_fetch_assoc($budgets_result)) {
+        $row['budget_name']   = decrypt_value($row['budget_name']);
+        $row['budget_amount'] = floatval(decrypt_value($row['budget_amount']));
+
         $recurring_days_csv = $row['recurring_days'] ?? '';
         if ($recurring_days_csv !== '') {
             // Only count expenses on the budget's configured weekdays
-            $js_days   = array_filter(array_map('intval', explode(',', $recurring_days_csv)), fn($d) => $d >= 0 && $d <= 6);
+            $js_days    = array_filter(array_map('intval', explode(',', $recurring_days_csv)), fn($d) => $d >= 0 && $d <= 6);
             $mysql_days = array_values(array_map(fn($d) => $d + 1, $js_days));
             $placeholders = implode(',', array_fill(0, count($mysql_days), '?'));
             $spent_stmt = mysqli_prepare($savienojums,
-                "SELECT SUM(amount) as total FROM BU_transactions
+                "SELECT amount FROM BU_transactions
                  WHERE user_id = ? AND type = 'expense'
                  AND date BETWEEN ? AND ?
                  AND ignore_budget = 0
                  AND DAYOFWEEK(date) IN ({$placeholders})");
-            $types = 'iss' . str_repeat('i', count($mysql_days));
+            $types     = 'iss' . str_repeat('i', count($mysql_days));
             $bind_args = array_merge([$user_id, $row['start_date'], $row['end_date']], $mysql_days);
             mysqli_stmt_bind_param($spent_stmt, $types, ...$bind_args);
         } else {
             $spent_stmt = mysqli_prepare($savienojums,
-                "SELECT SUM(amount) as total FROM BU_transactions
+                "SELECT amount FROM BU_transactions
                  WHERE user_id = ? AND type = 'expense'
                  AND date BETWEEN ? AND ?
                  AND ignore_budget = 0");
             mysqli_stmt_bind_param($spent_stmt, "iss", $user_id, $row['start_date'], $row['end_date']);
         }
         mysqli_stmt_execute($spent_stmt);
-        $spent_row = mysqli_fetch_assoc(mysqli_stmt_get_result($spent_stmt));
+        $spent_res = mysqli_stmt_get_result($spent_stmt);
+        $spent = 0.0;
+        while ($sr = mysqli_fetch_assoc($spent_res)) {
+            $spent += floatval(decrypt_value($sr['amount']));
+        }
         mysqli_stmt_close($spent_stmt);
 
-        $spent             = $spent_row['total'] ?? 0;
         $row['spent']      = $spent;
         $row['remaining']  = $row['budget_amount'] - $spent;
         $row['percentage'] = $row['budget_amount'] > 0
@@ -545,7 +556,6 @@ foreach ($budgets as $bgt) {
                 'id'                  => $bgt['id'],
                 'budget_name'         => $bgt['budget_name'],
                 'budget_amount'       => $bgt['budget_amount'],
-                'warning_threshold'   => $bgt['warning_threshold'],
                 'recurring_days'      => $bgt['recurring_days'],
                 'start_date'          => $bgt['start_date'],
                 'end_date'            => $bgt['end_date'],
@@ -729,7 +739,6 @@ $total_remaining = $total_budget_amount - $total_spent;
                                     'spent'              => $qrow['spent'],
                                     'remaining'          => $qrow['remaining'],
                                     'percentage'         => $qrow['percentage'],
-                                    'warning_threshold'  => $qrow['warning_threshold'],
                                     'recurring_days'     => $qrow['recurring_days'],
                                     'budget_name'        => $qrow['budget_name'],
                                     'budget_period'      => $qrow['budget_period'] ?? 'quarterly',
@@ -999,7 +1008,7 @@ $total_remaining = $total_budget_amount - $total_spent;
                     </div>
                 </div>
 
-                <input type="hidden" name="warning_threshold" value="80">
+
 
                 <button type="submit" class="btn btn-primary btn-full">
                     <span data-i18n="budget.add.submit">Pievienot budžetu</span>
@@ -1032,7 +1041,7 @@ $total_remaining = $total_budget_amount - $total_spent;
                            class="form-input" step="0.01" min="0" required>
                 </div>
 
-                <input type="hidden" name="warning_threshold" id="edit_warning_threshold" value="80">
+
 
                 <!-- ── RECURRING DAYS (edit) ───────────────────────────── -->
                 <div class="form-group" id="edit_recurring_section" style="display:none;">
