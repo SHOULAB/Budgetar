@@ -120,11 +120,9 @@ function calcRecurringDatesPHP(string $csv): array {
 // ─── Helper: first occurrence of each selected day within a date window ─────────
 // Given "5,6,0" (Fri, Sat, Sun) and a window start/end like "2026-05-01"/"2026-05-07",
 // returns the earliest occurrence of each selected day within that window.
-function calcMonthWeekOccurrences(string $csv, string $wStart, string $wEnd): array {
+function calcMonthWeekOccurrences(string $csv, string $wStart, string $wEnd): ?array {
     $days = array_map('intval', array_filter(explode(',', $csv), fn($d) => $d !== ''));
-    if (empty($days)) {
-        return ['start' => $wStart, 'end' => $wStart];
-    }
+    if (empty($days)) return null;
 
     $startDt = new DateTime($wStart);
     $endDt   = new DateTime($wEnd);
@@ -142,9 +140,7 @@ function calcMonthWeekOccurrences(string $csv, string $wStart, string $wEnd): ar
         }
     }
 
-    if (empty($candidates)) {
-        return ['start' => $wStart, 'end' => $wStart];
-    }
+    if (empty($candidates)) return null;
 
     usort($candidates, fn($a, $b) => $a <=> $b);
 
@@ -154,15 +150,20 @@ function calcMonthWeekOccurrences(string $csv, string $wStart, string $wEnd): ar
     ];
 }
 
-// ─── Helper: get the 4 week-of-month ranges for a given year+month ────────────
+// ─── Helper: get week-of-month ranges for a given year+month (4 or 5 weeks) ──
+// Q1=days 1-7, Q2=8-14, Q3=15-21, Q4=22-28, Q5=29-end (only if month has ≥29 days)
 function getMonthWeekRanges(int $year, int $month): array {
     $dim = (int)(new DateTime("{$year}-{$month}-01"))->format('t');
-    return [
+    $ranges = [
         'Q1' => [sprintf('%04d-%02d-01', $year, $month), sprintf('%04d-%02d-07', $year, $month)],
         'Q2' => [sprintf('%04d-%02d-08', $year, $month), sprintf('%04d-%02d-14', $year, $month)],
         'Q3' => [sprintf('%04d-%02d-15', $year, $month), sprintf('%04d-%02d-21', $year, $month)],
-        'Q4' => [sprintf('%04d-%02d-22', $year, $month), sprintf('%04d-%02d-%02d', $year, $month, $dim)],
+        'Q4' => [sprintf('%04d-%02d-22', $year, $month), sprintf('%04d-%02d-28', $year, $month)],
     ];
+    if ($dim >= 29) {
+        $ranges['Q5'] = [sprintf('%04d-%02d-29', $year, $month), sprintf('%04d-%02d-%02d', $year, $month, $dim)];
+    }
+    return $ranges;
 }
 
 // ─── Auto-refresh expired recurring budgets ───────────────────────────────────
@@ -220,7 +221,7 @@ function refreshRecurringBudgets($conn, $uid): void {
 
     foreach ($qAll as $budget) {
         $ql = $budget['quarter_label'];
-        if (!in_array($ql, ['Q1','Q2','Q3','Q4'])) continue;
+        if (!in_array($ql, ['Q1','Q2','Q3','Q4','Q5'])) continue;
 
         // Determine the month this entry belongs to
         $entryYear  = (int)substr($budget['start_date'], 0, 4);
@@ -233,15 +234,25 @@ function refreshRecurringBudgets($conn, $uid): void {
         // Only advance once the entire month has passed
         if ($today <= $monthEnd) continue;
 
-        // Advance to the same week of the next month
+        // Advance to the same week slot in the next month that has an occurrence
         $nextMonthDt = new DateTime("{$entryYear}-{$entryMonth}-01");
         $nextMonthDt->modify('first day of next month');
-        $ny = (int)$nextMonthDt->format('Y');
-        $nm = (int)$nextMonthDt->format('n');
-
-        $weekRanges = getMonthWeekRanges($ny, $nm);
-        [$wStart, $wEnd] = $weekRanges[$ql];
-        $dates    = calcMonthWeekOccurrences($budget['recurring_days'], $wStart, $wEnd);
+        $dates = null;
+        for ($attempt = 0; $attempt < 13; $attempt++) {
+            $ny = (int)$nextMonthDt->format('Y');
+            $nm = (int)$nextMonthDt->format('n');
+            $weekRanges = getMonthWeekRanges($ny, $nm);
+            if (!isset($weekRanges[$ql])) {
+                // This Qx doesn't exist in this month (e.g. Q5 in a short month) — try next
+                $nextMonthDt->modify('first day of next month');
+                continue;
+            }
+            [$wStart, $wEnd] = $weekRanges[$ql];
+            $dates = calcMonthWeekOccurrences($budget['recurring_days'], $wStart, $wEnd);
+            if ($dates !== null) break;
+            $nextMonthDt->modify('first day of next month');
+        }
+        if ($dates === null) continue; // no valid month found, leave as-is
         $newStart = $dates['start'];
         $newEnd   = $dates['end'];
 
@@ -291,6 +302,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
             foreach ($weeks as $q_label => [$wStart, $wEnd]) {
                 $q_dates = calcMonthWeekOccurrences($recurring_days, $wStart, $wEnd);
+                if ($q_dates === null) continue; // no selected day in this window — skip
                 $q_start = $q_dates['start'];
                 $q_end   = $q_dates['end'];
 
@@ -669,7 +681,7 @@ $total_remaining = $total_budget_amount - $total_spent;
                             $qd_all   = $budget['_quarters'];
                             // Pick first tab whose end_date >= today (current or next upcoming week)
                             $active_q = array_key_last($qd_all); // fallback: last available
-                            foreach (['Q1','Q2','Q3','Q4'] as $_ql) {
+                            foreach (['Q1','Q2','Q3','Q4','Q5'] as $_ql) {
                                 if (isset($qd_all[$_ql]) && $qd_all[$_ql]['end_date'] >= $today_str) {
                                     $active_q = $_ql;
                                     break;
@@ -733,7 +745,7 @@ $total_remaining = $total_budget_amount - $total_spent;
                              data-quarters-json="<?php echo htmlspecialchars(json_encode($quarters_for_js), ENT_QUOTES | ENT_HTML5); ?>">
 
                             <div class="quarter-nav">
-                                <?php foreach (['Q1', 'Q2', 'Q3', 'Q4'] as $ql): if (isset($qd_all[$ql])): ?>
+                                <?php foreach (['Q1', 'Q2', 'Q3', 'Q4', 'Q5'] as $ql): if (isset($qd_all[$ql])): ?>
                                 <button type="button"
                                         class="quarter-nav-btn<?php echo ($ql === $active_q) ? ' active' : ''; ?>"
                                         data-q="<?php echo $ql; ?>"
