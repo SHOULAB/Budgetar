@@ -293,6 +293,12 @@ body {
     margin-top: auto;
 }
 
+.nav-divider {
+    height: 1px;
+    background: var(--border-color, rgba(255,255,255,0.08));
+    margin: 8px 20px;
+}
+
 .nav-item {
     display: flex;
     align-items: center;

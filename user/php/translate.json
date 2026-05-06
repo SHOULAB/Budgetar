@@ -202,6 +202,8 @@
     "nav.budget":   "Budžets",
     "nav.settings": "Iestatījumi",
     "nav.logout":   "Iziet",
+    "sidebar.dashboard": "Panelis",
+    "sidebar.users":     "Lietotāji",
 
     "~~~ calendar.php ~~~": "",
 
@@ -607,6 +609,8 @@
     "nav.budget":   "Budget",
     "nav.settings": "Settings",
     "nav.logout":   "Log out",
+    "sidebar.dashboard": "Dashboard",
+    "sidebar.users":     "Users",
 
     "~~~ calendar.php ~~~": "",
 

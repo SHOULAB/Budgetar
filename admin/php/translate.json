@@ -9,6 +9,11 @@
     "sidebar.settings":           "Iestatījumi",
     "sidebar.user.panel":         "User Panel",
 
+    "nav.calendar":               "Kalendārs",
+    "nav.reports":                "Pārskati",
+    "nav.budget":                 "Budžets",
+    "nav.settings":               "Iestatījumi",
+
     "~~~ index.php (dashboard) ~~~": "",
 
     "dashboard.page.title":       "Admin Panelis",
@@ -174,6 +179,11 @@
     "sidebar.users":              "Users",
     "sidebar.settings":           "Settings",
     "sidebar.user.panel":         "User Panel",
+
+    "nav.calendar":               "Calendar",
+    "nav.reports":                "Reports",
+    "nav.budget":                 "Budget",
+    "nav.settings":               "Settings",
 
     "~~~ index.php (dashboard) ~~~": "",
 

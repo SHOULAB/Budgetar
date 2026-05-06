@@ -33,9 +33,14 @@
             <span class="nav-text" data-i18n="nav.settings">Iestatījumi</span>
         </a>
         <?php if (in_array(strtolower($_SESSION['role'] ?? 'user'), ['administrator', 'moderator'])): ?>
-        <a href="../../admin/php/index.php" class="nav-item nav-item--bottom">
-            <span class="nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
-            <span class="nav-text">Admin</span>
+        <div class="nav-divider"></div>
+        <a href="../../admin/php/index.php" class="nav-item <?php echo ($active_page === 'dashboard') ? 'active' : ''; ?>">
+            <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
+            <span class="nav-text" data-i18n="sidebar.dashboard">Dashboard</span>
+        </a>
+        <a href="../../admin/php/users.php" class="nav-item <?php echo ($active_page === 'users') ? 'active' : ''; ?>">
+            <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+            <span class="nav-text" data-i18n="sidebar.users">Lietotāji</span>
         </a>
         <?php endif; ?>
     </nav>
