@@ -117,26 +117,33 @@ function calcRecurringDatesPHP(string $csv): array {
     ];
 }
 
-// ─── Helper: first occurrence of each selected day within a quarter ─────────────
-// Given "6,0" (Sat, Sun) and a quarter start like "2026-01-01",
-// returns the dates of the first occurrence of each day in that quarter.
-function calcQuarterFirstOccurrences(string $csv, string $qStart): array {
+// ─── Helper: first occurrence of each selected day within a date window ─────────
+// Given "5,6,0" (Fri, Sat, Sun) and a window start/end like "2026-05-01"/"2026-05-07",
+// returns the earliest occurrence of each selected day within that window.
+function calcMonthWeekOccurrences(string $csv, string $wStart, string $wEnd): array {
     $days = array_map('intval', array_filter(explode(',', $csv), fn($d) => $d !== ''));
     if (empty($days)) {
-        return ['start' => $qStart, 'end' => $qStart];
+        return ['start' => $wStart, 'end' => $wStart];
     }
 
-    $qStartDt = new DateTime($qStart);
+    $startDt = new DateTime($wStart);
+    $endDt   = new DateTime($wEnd);
 
-    // Convert JS day index (0=Sun,1=Mon,...,6=Sat) to PHP ISO day (1=Mon,...,7=Sun)
     $candidates = [];
     foreach ($days as $jd) {
-        $phpDay = ($jd === 0) ? 7 : $jd;   // Sun→7, Mon→1, …, Sat→6
-        $dt     = clone $qStartDt;
-        $cur    = (int)$dt->format('N');    // 1=Mon … 7=Sun
-        $offset = ($phpDay >= $cur) ? ($phpDay - $cur) : (7 - $cur + $phpDay);
-        $dt->modify("+{$offset} days");
-        $candidates[] = $dt;
+        $phpDay = ($jd === 0) ? 7 : $jd; // Sun→7, Mon→1, …, Sat→6
+        $dt = clone $startDt;
+        while ($dt <= $endDt) {
+            if ((int)$dt->format('N') === $phpDay) {
+                $candidates[] = clone $dt;
+                break;
+            }
+            $dt->modify('+1 day');
+        }
+    }
+
+    if (empty($candidates)) {
+        return ['start' => $wStart, 'end' => $wStart];
     }
 
     usort($candidates, fn($a, $b) => $a <=> $b);
@@ -144,6 +151,17 @@ function calcQuarterFirstOccurrences(string $csv, string $qStart): array {
     return [
         'start' => $candidates[0]->format('Y-m-d'),
         'end'   => end($candidates)->format('Y-m-d'),
+    ];
+}
+
+// ─── Helper: get the 4 week-of-month ranges for a given year+month ────────────
+function getMonthWeekRanges(int $year, int $month): array {
+    $dim = (int)(new DateTime("{$year}-{$month}-01"))->format('t');
+    return [
+        'Q1' => [sprintf('%04d-%02d-01', $year, $month), sprintf('%04d-%02d-07', $year, $month)],
+        'Q2' => [sprintf('%04d-%02d-08', $year, $month), sprintf('%04d-%02d-14', $year, $month)],
+        'Q3' => [sprintf('%04d-%02d-15', $year, $month), sprintf('%04d-%02d-21', $year, $month)],
+        'Q4' => [sprintf('%04d-%02d-22', $year, $month), sprintf('%04d-%02d-%02d', $year, $month, $dim)],
     ];
 }
 
@@ -185,47 +203,53 @@ function refreshRecurringBudgets($conn, $uid): void {
         mysqli_stmt_close($upd);
     }
 
-    // ── Quarterly recurring budgets — advance within their own quarter ────────
+    // ── Monthly-week recurring budgets (Q1=week1, Q2=week2, Q3=week3, Q4=week4) ──
     if (!$has_quarter) return;
 
     $q_stmt = mysqli_prepare($conn,
         "SELECT id, start_date, end_date, recurring_days, quarter_label
          FROM   BU_budgets
-         WHERE  user_id = ? AND is_recurring = 1 AND end_date < ?
+         WHERE  user_id = ? AND is_recurring = 1
                 AND quarter_label IS NOT NULL AND quarter_label != ''");
-    mysqli_stmt_bind_param($q_stmt, "is", $uid, $today);
+    mysqli_stmt_bind_param($q_stmt, "i", $uid);
     mysqli_stmt_execute($q_stmt);
     $q_result  = mysqli_stmt_get_result($q_stmt);
-    $qToUpdate = [];
-    while ($row = mysqli_fetch_assoc($q_result)) { $qToUpdate[] = $row; }
+    $qAll = [];
+    while ($row = mysqli_fetch_assoc($q_result)) { $qAll[] = $row; }
     mysqli_stmt_close($q_stmt);
 
-    $quarterRanges = [
-        'Q1' => ['-01-01', '-03-31'],
-        'Q2' => ['-04-01', '-06-30'],
-        'Q3' => ['-07-01', '-09-30'],
-        'Q4' => ['-10-01', '-12-31'],
-    ];
-
-    foreach ($qToUpdate as $budget) {
+    foreach ($qAll as $budget) {
         $ql = $budget['quarter_label'];
-        if (!isset($quarterRanges[$ql])) continue;
-        $year   = substr($budget['start_date'], 0, 4);
-        $qStart = $year . $quarterRanges[$ql][0];
-        $qEnd   = $year . $quarterRanges[$ql][1];
+        if (!in_array($ql, ['Q1','Q2','Q3','Q4'])) continue;
 
-        $dates    = calcRecurringDatesPHP($budget['recurring_days']);
+        // Determine the month this entry belongs to
+        $entryYear  = (int)substr($budget['start_date'], 0, 4);
+        $entryMonth = (int)substr($budget['start_date'], 5, 2);
+
+        // Last day of this entry's month
+        $monthEnd = sprintf('%04d-%02d-%02d', $entryYear, $entryMonth,
+            (int)(new DateTime("{$entryYear}-{$entryMonth}-01"))->format('t'));
+
+        // Only advance once the entire month has passed
+        if ($today <= $monthEnd) continue;
+
+        // Advance to the same week of the next month
+        $nextMonthDt = new DateTime("{$entryYear}-{$entryMonth}-01");
+        $nextMonthDt->modify('first day of next month');
+        $ny = (int)$nextMonthDt->format('Y');
+        $nm = (int)$nextMonthDt->format('n');
+
+        $weekRanges = getMonthWeekRanges($ny, $nm);
+        [$wStart, $wEnd] = $weekRanges[$ql];
+        $dates    = calcMonthWeekOccurrences($budget['recurring_days'], $wStart, $wEnd);
         $newStart = $dates['start'];
         $newEnd   = $dates['end'];
 
-        // Only advance if the new dates still fall within this quarter
-        if ($newStart >= $qStart && $newEnd <= $qEnd) {
-            $upd = mysqli_prepare($conn,
-                "UPDATE BU_budgets SET start_date = ?, end_date = ? WHERE id = ?");
-            mysqli_stmt_bind_param($upd, "ssi", $newStart, $newEnd, $budget['id']);
-            mysqli_stmt_execute($upd);
-            mysqli_stmt_close($upd);
-        }
+        $upd = mysqli_prepare($conn,
+            "UPDATE BU_budgets SET start_date = ?, end_date = ? WHERE id = ?");
+        mysqli_stmt_bind_param($upd, "ssi", $newStart, $newEnd, $budget['id']);
+        mysqli_stmt_execute($upd);
+        mysqli_stmt_close($upd);
     }
 }
 
@@ -257,23 +281,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if (empty($budget_name) || $budget_amount <= 0) {
             $error = 'Lūdzu aizpildiet visus obligātos laukus!';
         } elseif ($is_recurring) {
-            // ── Create 4 quarterly instances for the current year ─────────────
-            $year     = date('Y');
-            $quarters = [
-                'Q1' => [$year . '-01-01', $year . '-03-31'],
-                'Q2' => [$year . '-04-01', $year . '-06-30'],
-                'Q3' => [$year . '-07-01', $year . '-09-30'],
-                'Q4' => [$year . '-10-01', $year . '-12-31'],
-            ];
+            // ── Create 4 week-of-month entries for the current month ──────────
+            $year     = (int)date('Y');
+            $month    = (int)date('n');
+            $weeks    = getMonthWeekRanges($year, $month);
             $group_id = uniqid('qg_', true);
             $all_ok   = true;
+            $period   = 'weekly';
 
-            foreach ($quarters as $q_label => [$q_start, $q_end]) {
-                // Use the first occurrence of the selected weekdays within the quarter
-                $q_dates  = calcQuarterFirstOccurrences($recurring_days, $q_start);
-                $q_start  = $q_dates['start'];
-                $q_end    = $q_dates['end'];
-                $period = 'quarterly';
+            foreach ($weeks as $q_label => [$wStart, $wEnd]) {
+                $q_dates = calcMonthWeekOccurrences($recurring_days, $wStart, $wEnd);
+                $q_start = $q_dates['start'];
+                $q_end   = $q_dates['end'];
+
                 $stmt = mysqli_prepare($savienojums,
                     "INSERT INTO BU_budgets
                         (user_id, budget_name, budget_amount, budget_period,
@@ -487,9 +507,16 @@ usort($budgets, function ($a, $b) use ($today_ts) {
     return strtotime($a['start_date']) - strtotime($b['start_date']);
 });
 
-// ─── Group quarterly budgets into unified display entries ─────────────────────
-$current_month   = (int)date('n');
-$current_quarter = 'Q' . (int)ceil($current_month / 3); // Q1..Q4
+// ─── Group monthly-week budgets into unified display entries ─────────────────
+$today_str = date('Y-m-d');
+// Pick the active tab: the first Qx (in order Q1→Q4) whose end_date >= today
+// This selects the current or next upcoming week-of-month tab.
+$current_quarter = 'Q1'; // fallback
+foreach (['Q1','Q2','Q3','Q4'] as $_ql_check) {
+    // Will be resolved per-card after grouping; this default is only a fallback
+    $current_quarter = $_ql_check;
+    break;
+}
 
 $display_budgets = [];
 $seen_group_ids  = [];
@@ -640,28 +667,42 @@ $total_remaining = $total_budget_amount - $total_spent;
                         if (!empty($budget['_is_quarterly_group'])):
                             // ── QUARTERLY GROUP CARD ──────────────────────────────────
                             $qd_all   = $budget['_quarters'];
-                            $active_q = isset($qd_all[$current_quarter]) ? $current_quarter : array_key_first($qd_all);
+                            // Pick first tab whose end_date >= today (current or next upcoming week)
+                            $active_q = array_key_last($qd_all); // fallback: last available
+                            foreach (['Q1','Q2','Q3','Q4'] as $_ql) {
+                                if (isset($qd_all[$_ql]) && $qd_all[$_ql]['end_date'] >= $today_str) {
+                                    $active_q = $_ql;
+                                    break;
+                                }
+                            }
                             $aqd      = $qd_all[$active_q];
 
                             $aq_is_active   = strtotime($aqd['end_date'])   >= time();
                             $aq_is_upcoming = strtotime($aqd['start_date']) >  time();
-                            $aq_percentage  = min($aqd['percentage'], 100);
+                            $aq_percentage  = $aqd['percentage']; // real %, may exceed 100
+                            $aq_bar_width   = min($aq_percentage, 100);
 
+                            // Status badge — based on date + spending
                             if ($aq_is_upcoming) {
-                                $status_class   = 'status-upcoming';
-                                $status_text    = $_t['budget.status.upcoming'] ?? 'Gaidāmais';
-                                $progress_class = 'progress-safe';
+                                $status_class = 'status-upcoming';
+                                $status_text  = $_t['budget.status.upcoming'] ?? 'Gaidāmais';
                             } elseif (!$aq_is_active) {
-                                $status_class   = 'status-expired';
-                                $status_text    = $_t['budget.status.expired'] ?? 'Beidzies';
+                                $status_class = 'status-expired';
+                                $status_text  = $_t['budget.status.expired'] ?? 'Beidzies';
+                            } elseif ($aq_percentage >= 100) {
+                                $status_class = 'status-over';
+                                $status_text  = $_t['budget.status.over'] ?? 'Pārsniegts';
+                            } else {
+                                $status_class = 'status-active';
+                                $status_text  = $_t['budget.status.active'] ?? 'Aktīvs';
+                            }
+
+                            // Bar color — green <70%, orange >=70%, red >=100%
+                            if ($aq_percentage >= 100) {
                                 $progress_class = 'progress-danger';
-                            } elseif ($aq_percentage >= $aqd['warning_threshold']) {
-                                $status_class   = 'status-warning';
-                                $status_text    = $_t['budget.status.warning'] ?? 'Brīdinājums';
+                            } elseif ($aq_percentage >= 70) {
                                 $progress_class = 'progress-warning';
                             } else {
-                                $status_class   = 'status-active';
-                                $status_text    = $_t['budget.status.active'] ?? 'Aktīvs';
                                 $progress_class = 'progress-safe';
                             }
 
@@ -739,7 +780,7 @@ $total_remaining = $total_budget_amount - $total_spent;
 
                             <div class="budget-progress">
                                 <div class="budget-progress-bar qcard-progress-bar <?php echo $progress_class; ?>"
-                                     style="width:<?php echo $aq_percentage; ?>%"></div>
+                                     style="width:<?php echo $aq_bar_width; ?>%"></div>
                             </div>
                             <div style="text-align:center; color:var(--text-secondary); font-size:12px; margin-top:8px;">
                                 <span class="qcard-pct-num"><?php echo number_format($aq_percentage, 1); ?></span>% <span data-i18n="budget.label.used">izmantots</span>
@@ -766,23 +807,30 @@ $total_remaining = $total_budget_amount - $total_spent;
                         <?php else:
                             $is_active   = strtotime($budget['end_date'])   >= time();
                             $is_upcoming = strtotime($budget['start_date']) >  time();
-                            $percentage  = min($budget['percentage'], 100);
+                            $percentage  = $budget['percentage']; // real %, may exceed 100
+                            $bar_width   = min($percentage, 100);
 
+                            // Status badge — based on date + spending
                             if ($is_upcoming) {
-                                $status_class   = 'status-upcoming';
-                                $status_text    = $_t['budget.status.upcoming'] ?? 'Gaidāmais';
-                                $progress_class = 'progress-safe';
+                                $status_class = 'status-upcoming';
+                                $status_text  = $_t['budget.status.upcoming'] ?? 'Gaidāmais';
                             } elseif (!$is_active) {
-                                $status_class   = 'status-expired';
-                                $status_text    = $_t['budget.status.expired'] ?? 'Beidzies';
+                                $status_class = 'status-expired';
+                                $status_text  = $_t['budget.status.expired'] ?? 'Beidzies';
+                            } elseif ($percentage >= 100) {
+                                $status_class = 'status-over';
+                                $status_text  = $_t['budget.status.over'] ?? 'Pārsniegts';
+                            } else {
+                                $status_class = 'status-active';
+                                $status_text  = $_t['budget.status.active'] ?? 'Aktīvs';
+                            }
+
+                            // Bar color — green <70%, orange >=70%, red >=100%
+                            if ($percentage >= 100) {
                                 $progress_class = 'progress-danger';
-                            } elseif ($percentage >= $budget['warning_threshold']) {
-                                $status_class   = 'status-warning';
-                                $status_text    = $_t['budget.status.warning'] ?? 'Brīdinājums';
+                            } elseif ($percentage >= 70) {
                                 $progress_class = 'progress-warning';
                             } else {
-                                $status_class   = 'status-active';
-                                $status_text    = $_t['budget.status.active'] ?? 'Aktīvs';
                                 $progress_class = 'progress-safe';
                             }
                         ?>
@@ -832,7 +880,7 @@ $total_remaining = $total_budget_amount - $total_spent;
 
                             <div class="budget-progress">
                                 <div class="budget-progress-bar <?php echo $progress_class; ?>"
-                                     style="width:<?php echo $percentage; ?>%"></div>
+                                     style="width:<?php echo $bar_width; ?>%"></div>
                             </div>
                             <div style="text-align:center; color:var(--text-secondary); font-size:12px; margin-top:8px;">
                                 <?php echo number_format($percentage, 1); ?>% <span data-i18n="budget.label.used">izmantots</span>
@@ -939,14 +987,7 @@ $total_remaining = $total_budget_amount - $total_spent;
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label" data-i18n="budget.add.warning.label">Brīdinājuma slieksnis (%) *</label>
-                    <input type="number" name="warning_threshold" class="form-input"
-                           min="0" max="100" value="80" required>
-                    <small style="color:var(--text-secondary); font-size:12px;" data-i18n="budget.add.warning.hint">
-                        Tu saņemsi brīdinājumu, kad tērējumi sasniegs šo procentu
-                    </small>
-                </div>
+                <input type="hidden" name="warning_threshold" value="80">
 
                 <button type="submit" class="btn btn-primary btn-full">
                     <span data-i18n="budget.add.submit">Pievienot budžetu</span>
@@ -979,11 +1020,7 @@ $total_remaining = $total_budget_amount - $total_spent;
                            class="form-input" step="0.01" min="0" required>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label" data-i18n="budget.edit.warning.label">Brīdinājuma slieksnis (%) *</label>
-                    <input type="number" name="warning_threshold" id="edit_warning_threshold"
-                           class="form-input" min="0" max="100" required>
-                </div>
+                <input type="hidden" name="warning_threshold" id="edit_warning_threshold" value="80">
 
                 <!-- ── RECURRING DAYS (edit) ───────────────────────────── -->
                 <div class="form-group" id="edit_recurring_section" style="display:none;">

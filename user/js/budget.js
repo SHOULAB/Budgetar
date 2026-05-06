@@ -162,25 +162,33 @@ function switchQuarterTab(card, q) {
     const now    = Date.now();
     const start  = new Date(qd.start_date + 'T00:00:00').getTime();
     const end    = new Date(qd.end_date   + 'T23:59:59').getTime();
-    const pct    = Math.min(parseFloat(qd.percentage), 100);
+    const pct    = parseFloat(qd.percentage); // real %, may exceed 100
+    const barW   = Math.min(pct, 100);
     const thresh = parseFloat(qd.warning_threshold);
 
-    let statusClass, statusText, progressClass;
+    // Status badge — based on date + spending
+    let statusClass, statusText;
     if (start > now) {
-        statusClass   = 'status-upcoming';
-        statusText    = qGetT('budget.status.upcoming', 'Gaid\u0101mais');
-        progressClass = 'progress-safe';
+        statusClass = 'status-upcoming';
+        statusText  = qGetT('budget.status.upcoming', 'Gaid\u0101mais');
     } else if (end < now) {
-        statusClass   = 'status-expired';
-        statusText    = qGetT('budget.status.expired', 'Beidzies');
+        statusClass = 'status-expired';
+        statusText  = qGetT('budget.status.expired', 'Beidzies');
+    } else if (pct >= 100) {
+        statusClass = 'status-over';
+        statusText  = qGetT('budget.status.over', 'P\u0101rsniegts');
+    } else {
+        statusClass = 'status-active';
+        statusText  = qGetT('budget.status.active', 'Akt\u012Bvs');
+    }
+
+    // Bar color — green <70%, orange >=70%, red >=100%
+    let progressClass;
+    if (pct >= 100) {
         progressClass = 'progress-danger';
-    } else if (pct >= thresh) {
-        statusClass   = 'status-warning';
-        statusText    = qGetT('budget.status.warning', 'Br\u012Bdin\u0101jums');
+    } else if (pct >= 70) {
         progressClass = 'progress-warning';
     } else {
-        statusClass   = 'status-active';
-        statusText    = qGetT('budget.status.active', 'Akt\u012Bvs');
         progressClass = 'progress-safe';
     }
 
@@ -202,7 +210,7 @@ function switchQuarterTab(card, q) {
     // Update progress bar
     const bar = card.querySelector('.qcard-progress-bar');
     if (bar) {
-        bar.style.width = pct + '%';
+        bar.style.width = barW + '%';
         bar.className   = 'budget-progress-bar qcard-progress-bar ' + progressClass;
     }
 

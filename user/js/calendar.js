@@ -554,24 +554,14 @@ function handleTransactionFormSubmit(e) {
         // Run expense-specific validation before submitting
         const typeField = document.getElementById('transaction_type');
         if (typeField && typeField.value === 'expense') {
-            const ignoreBudget = document.getElementById('ignoreBudgetCheck');
             const expenseAmount = parseFloat(document.getElementById('transaction_amount').value) || 0;
-            const expenseDate   = document.getElementById('transaction_date').value;
 
+            // Income check
             const newTotalExpense = monthlyExpense + expenseAmount;
             if (monthlyIncome > 0 && newTotalExpense > monthlyIncome) {
                 closeTransactionModal();
                 showWarningModal(expenseAmount, newTotalExpense);
                 return;
-            }
-
-            if (!(ignoreBudget && ignoreBudget.checked)) {
-                const breachedBudgets = getBudgetBreaches(expenseDate, expenseAmount);
-                if (breachedBudgets.length > 0) {
-                    closeTransactionModal();
-                    showBudgetWarningModal(expenseAmount, expenseDate, breachedBudgets);
-                    return;
-                }
             }
         }
 
@@ -634,7 +624,9 @@ function getBudgetBreaches(dateStr, amount) {
             if (!allowedDays.includes(expenseDow)) return false;
         }
 
-        return (b.spent + amount) > b.budget_amount;
+        // Warn when the new total would exceed the warning threshold (not just 100%)
+        const thresholdAmount = b.budget_amount * (parseFloat(b.warning_threshold) / 100);
+        return (b.spent + amount) > thresholdAmount;
     });
 }
 
