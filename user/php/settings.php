@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -398,6 +398,11 @@ if ($stmt) {
     <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/settings.css">
     <link rel="icon" href="../../assets/image/logo.png" type="image/png">
+    <link rel="manifest" href="../../manifest.json">
+    <meta name="theme-color" content="#14b8a6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="../../assets/image/logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css">
 </head>
@@ -720,6 +725,93 @@ if ($stmt) {
                 </form>
 
             <!-- ── Data ──────────────────────────────────────────────────────── -->
+            <section class="settings-section" id="pwa-install-section">
+                <div class="settings-section-header">
+                    <div class="settings-section-icon">
+                        <i class="fa-solid fa-mobile-screen"></i>
+                    </div>
+                    <div>
+                        <h2 class="settings-section-title" data-i18n="app.title">Lietotne</h2>
+                        <p class="settings-section-subtitle" data-i18n="app.subtitle">Instalēt Budgetar kā lietotni ierīcē</p>
+                    </div>
+                </div>
+                <div class="settings-card">
+                    <!-- Install button row: shown on Android/Chrome when beforeinstallprompt fires -->
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label" data-i18n="app.install.label">Instalēt lietotni</span>
+                            <span class="settings-row-desc" data-i18n="app.install.desc">Pievienot Budgetar sākumekrānam ātrai piekļuvei</span>
+                        </div>
+                        <div class="settings-row-field" style="gap:8px; flex-wrap:wrap;">
+                            <!-- Shown when native install prompt is available (Android Chrome) -->
+                            <button type="button" class="btn btn-primary" id="pwaInstallBtn" style="display:none;">
+                                <i class="fa-solid fa-download"></i>
+                                <span data-i18n="app.install.btn">Instalēt</span>
+                            </button>
+                            <!-- Shown on iOS Safari (no programmatic install support) -->
+                            <button type="button" class="btn btn-primary" id="pwaIOSInstallBtn" style="display:none;">
+                                <i class="fa-brands fa-apple"></i>
+                                <span data-i18n="app.install.ios.btn">Instalēt uz iOS</span>
+                            </button>
+                            <!-- Shown when app is already installed -->
+                            <span id="pwaInstalledMsg" class="settings-field-value" style="display:none;">
+                                <i class="fa-solid fa-circle-check" style="color:var(--primary);"></i>
+                                <span data-i18n="app.install.already">Instalēts</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="settings-divider"></div>
+                    <!-- QR code row: desktop users scan with phone to open the install page -->
+                    <div class="settings-row">
+                        <div class="settings-row-info">
+                            <span class="settings-row-label" data-i18n="app.qr.label">QR kods</span>
+                            <span class="settings-row-desc" data-i18n="app.qr.desc">Skenējiet ar tālruni, lai atvērtu instalēšanas lapu</span>
+                        </div>
+                        <div class="settings-row-field">
+                            <div id="pwaQrCode" style="background:#fff; padding:8px; border-radius:8px; display:inline-block;"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Full-screen install overlay: shown automatically when page opened via QR (?install=1) -->
+            <div id="pwaInstallOverlay" style="display:none; opacity:0; transition:opacity 0.3s ease; position:fixed; inset:0; z-index:10000; background:rgba(15,25,35,0.96); flex-direction:column; align-items:center; justify-content:center; padding:32px; text-align:center;">
+                <button id="pwaOverlayClose" style="position:absolute; top:20px; right:20px; background:none; border:none; color:#64748b; cursor:pointer; font-size:1.4rem;"><i class="fa-solid fa-xmark"></i></button>
+                <div style="width:72px; height:72px; border-radius:18px; background:var(--primary,#14b8a6); display:flex; align-items:center; justify-content:center; margin-bottom:24px; font-size:2rem; color:#fff;">
+                    <i class="fa-solid fa-mobile-screen"></i>
+                </div>
+                <h2 style="color:#f1f5f9; font-size:1.5rem; margin:0 0 10px;" data-i18n="app.overlay.title">Instalēt Budgetar</h2>
+                <p style="color:#94a3b8; font-size:0.95rem; margin:0 0 36px; max-width:280px; line-height:1.5;" data-i18n="app.overlay.desc">Pievienojiet lietotni savam sākumekrānam, lai to izmantotu kā īstu lietotni</p>
+                <!-- Android Chrome install button -->
+                <button id="pwaOverlayInstallBtn" style="display:none; width:100%; max-width:300px; padding:16px; background:var(--primary,#14b8a6); color:#fff; border:none; border-radius:12px; font-size:1rem; font-weight:600; cursor:pointer; margin-bottom:12px;" data-i18n="app.install.btn">Instalēt</button>
+                <!-- iOS Safari install button -->
+                <button id="pwaOverlayIOSBtn" style="display:none; width:100%; max-width:300px; padding:16px; background:var(--primary,#14b8a6); color:#fff; border:none; border-radius:12px; font-size:1rem; font-weight:600; cursor:pointer; margin-bottom:12px;" data-i18n="app.install.ios.btn">Instalēt uz iOS</button>
+                <p id="pwaOverlayInstalledMsg" style="display:none; color:#4ade80; font-size:1rem;" data-i18n="app.install.already">Instalēts</p>
+            </div>
+
+            <!-- iOS Add to Home Screen instruction modal -->
+            <div id="pwaIOSModal" style="display:none; position:fixed; inset:0; z-index:9999; align-items:flex-end; justify-content:center;">
+                <div id="pwaIOSModalOverlay" style="position:absolute; inset:0; background:rgba(0,0,0,0.65);"></div>
+                <div id="pwaIOSModalSheet" style="position:relative; background:var(--bg-card,#1a2535); border-radius:16px 16px 0 0; padding:28px 24px 36px; width:100%; max-width:480px; transform:translateY(100%); transition:transform 0.3s ease; box-shadow:0 -4px 32px rgba(0,0,0,0.4);">
+                    <button id="pwaIOSModalClose" style="position:absolute; top:16px; right:16px; background:none; border:none; color:var(--text-muted,#64748b); cursor:pointer; font-size:1.3rem; line-height:1;"><i class="fa-solid fa-xmark"></i></button>
+                    <h3 style="margin:0 0 20px; color:var(--text,#f1f5f9); font-size:1.1rem;" data-i18n="app.ios.modal.title">Instalēt uz iPhone / iPad</h3>
+                    <div style="display:flex; flex-direction:column; gap:18px;">
+                        <div style="display:flex; align-items:center; gap:14px;">
+                            <div style="width:34px; height:34px; border-radius:50%; background:var(--primary,#14b8a6); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-weight:700; color:#fff; font-size:0.95rem;">1</div>
+                            <span style="color:var(--text,#f1f5f9); font-size:0.95rem;" data-i18n="app.ios.modal.step1">Nospiediet <i class="fa-solid fa-arrow-up-from-bracket" style="color:var(--primary);"></i> <strong>Kopīgot</strong> apakšā</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:14px;">
+                            <div style="width:34px; height:34px; border-radius:50%; background:var(--primary,#14b8a6); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-weight:700; color:#fff; font-size:0.95rem;">2</div>
+                            <span style="color:var(--text,#f1f5f9); font-size:0.95rem;" data-i18n="app.ios.modal.step2">Izvēlieties <strong>"Pievienot sākumekrānam"</strong></span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:14px;">
+                            <div style="width:34px; height:34px; border-radius:50%; background:var(--primary,#14b8a6); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-weight:700; color:#fff; font-size:0.95rem;">3</div>
+                            <span style="color:var(--text,#f1f5f9); font-size:0.95rem;" data-i18n="app.ios.modal.step3">Nospiediet <strong>"Pievienot"</strong> augšējā labajā stūrī</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <section class="settings-section">
                 <div class="settings-section-header">
                     <div class="settings-section-icon">
@@ -871,6 +963,8 @@ if ($stmt) {
         localStorage.setItem('budgetar_theme', '<?php echo $current_theme; ?>');
     </script>
     <script src="../js/script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="../js/installPrompt.js"></script>
     <script>window._i18nData=<?php echo json_encode($_traw_settings); ?>;window._i18nLang=<?php echo json_encode($current_language); ?>;window._i18nIsDefault=<?php echo $_langIsDefault ? 'true' : 'false'; ?>;</script>
     <script src="../js/language.js"></script>
     <script src="../js/settings.js"></script>
@@ -1239,6 +1333,21 @@ if ($stmt) {
     }
     _csvImport('importCsvBtn',        'csvFileInput',        'importResultRow',        'importResultText',        'data_import.php');
     _csvImport('importBudgetsCsvBtn', 'csvBudgetsFileInput', 'importBudgetsResultRow', 'importBudgetsResultText', 'data_import_budgets.php');
+
+    // PWA QR code — points to this settings page with ?install=1 so the overlay fires automatically
+    (function () {
+        var el = document.getElementById('pwaQrCode');
+        if (!el || typeof QRCode === 'undefined') return;
+        var appUrl = window.location.origin + window.location.pathname.replace(/[^\/]+\.php$/, 'install.php');
+        new QRCode(el, {
+            text: appUrl,
+            width: 128,
+            height: 128,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    }());
     </script>
 </body>
 </html>

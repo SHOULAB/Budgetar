@@ -216,3 +216,20 @@ if (document.readyState === 'loading') {
 } else {
     animateOnScroll();
 }
+
+// PWA: Capture the install prompt as early as possible.
+// Stored globally so installPrompt.js can use it even if the event fired
+// before that script had a chance to register its own listener.
+window._pwaPrompt = null;
+window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); // Prevent the browser's default mini-infobar
+    window._pwaPrompt = e;
+});
+
+// PWA: Register service worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+        navigator.serviceWorker.register('../../sw.js')
+            .catch(function (err) { console.error('SW registration failed:', err); });
+    });
+}

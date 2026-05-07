@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -157,6 +157,11 @@ $ratio = $alltime['expense'] > 0 ? round($alltime['income'] / $alltime['expense'
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Budgetar</title>
     <link rel="icon" href="../../assets/image/logo.png" type="image/png">
+    <link rel="manifest" href="../../manifest.json">
+    <meta name="theme-color" content="#14b8a6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="../../assets/image/logo.png">
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/reports.css">

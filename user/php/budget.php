@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // budget.php - User Budget Management
 session_start();
 
@@ -597,6 +597,11 @@ $total_remaining = $total_budget_amount - $total_spent;
     <link rel="stylesheet" href="../css/budget.css">
     <link rel="stylesheet" href="../css/settings.css">
     <link rel="icon" href="../../assets/image/logo.png" type="image/png">
+    <link rel="manifest" href="../../manifest.json">
+    <meta name="theme-color" content="#14b8a6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="../../assets/image/logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
 </head>
 <body class="<?php echo (($_SESSION['theme'] ?? 'dark') === 'light') ? 'light-mode' : ''; ?>">

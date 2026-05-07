@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // register.php - Registration Page
 session_start();
 
@@ -116,6 +116,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Budgetar</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="icon" href="../../assets/image/logo.png" type="image/png">
+    <link rel="manifest" href="../../manifest.json">
+    <meta name="theme-color" content="#14b8a6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="../../assets/image/logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
 </head>
 <body>

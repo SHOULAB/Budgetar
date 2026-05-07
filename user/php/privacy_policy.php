@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 require_once('../../assets/database.php');
 
@@ -49,6 +49,11 @@ $_traw_settings = json_decode(file_get_contents(__DIR__ . '/translate.json'), tr
     <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/settings.css">
     <link rel="icon" href="../../assets/image/logo.png" type="image/png">
+    <link rel="manifest" href="../../manifest.json">
+    <meta name="theme-color" content="#14b8a6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="../../assets/image/logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
 </head>
 <?php $en = ($current_language === 'en'); ?>
