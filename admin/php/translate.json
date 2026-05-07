@@ -13,6 +13,8 @@
     "nav.reports":                "Pārskati",
     "nav.budget":                 "Budžets",
     "nav.settings":               "Iestatījumi",
+    "nav.logout":                 "Iziet",
+    "nav.more":                   "Vairāk",
 
     "~~~ index.php (dashboard) ~~~": "",
 
@@ -184,6 +186,8 @@
     "nav.reports":                "Reports",
     "nav.budget":                 "Budget",
     "nav.settings":               "Settings",
+    "nav.logout":                 "Log out",
+    "nav.more":                   "More",
 
     "~~~ index.php (dashboard) ~~~": "",
 

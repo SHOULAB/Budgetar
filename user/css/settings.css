@@ -810,6 +810,25 @@ body.light-mode .mobile-nav-item:hover {
     color: var(--primary);
 }
 
+body.light-mode .mobile-more-sheet {
+    background: rgba(255, 255, 255, 0.98);
+    border-top-color: #cbd5e1;
+}
+
+body.light-mode .mobile-more-item {
+    color: #64748b;
+}
+
+body.light-mode .mobile-more-item.active,
+body.light-mode .mobile-more-item:hover {
+    background: rgba(20, 184, 166, 0.08);
+    color: var(--primary);
+}
+
+body.light-mode .mobile-more-handle {
+    background: #cbd5e1;
+}
+
 /* ── calendar.css: grid, days, transaction modal ─────────────────────────── */
 
 body.light-mode .calendar-container {

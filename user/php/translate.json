@@ -202,6 +202,7 @@
     "nav.budget":   "Budžets",
     "nav.settings": "Iestatījumi",
     "nav.logout":   "Iziet",
+    "nav.more":     "Vairāk",
     "sidebar.dashboard": "Panelis",
     "sidebar.users":     "Lietotāji",
 
@@ -609,6 +610,7 @@
     "nav.budget":   "Budget",
     "nav.settings": "Settings",
     "nav.logout":   "Log out",
+    "nav.more":     "More",
     "sidebar.dashboard": "Dashboard",
     "sidebar.users":     "Users",
 
