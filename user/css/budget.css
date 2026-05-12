@@ -44,6 +44,14 @@
     color: var(--text-secondary);
 }
 
+@media (max-width: 480px) {
+    .budget-search-bar {
+        flex: 1;
+        width: auto;
+        align-self: stretch;
+    }
+}
+
 .budget-no-results {
     text-align: center;
     padding: 60px 40px;

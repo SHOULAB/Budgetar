@@ -736,31 +736,6 @@ if ($stmt) {
                     </div>
                 </div>
                 <div class="settings-card">
-                    <!-- Install button row: shown on Android/Chrome when beforeinstallprompt fires -->
-                    <div class="settings-row">
-                        <div class="settings-row-info">
-                            <span class="settings-row-label" data-i18n="app.install.label">Instalēt lietotni</span>
-                            <span class="settings-row-desc" data-i18n="app.install.desc">Pievienot Budgetar sākumekrānam ātrai piekļuvei</span>
-                        </div>
-                        <div class="settings-row-field" style="gap:8px; flex-wrap:wrap;">
-                            <!-- Shown when native install prompt is available (Android Chrome) -->
-                            <button type="button" class="btn btn-primary" id="pwaInstallBtn" style="display:none;">
-                                <i class="fa-solid fa-download"></i>
-                                <span data-i18n="app.install.btn">Instalēt</span>
-                            </button>
-                            <!-- Shown on iOS Safari (no programmatic install support) -->
-                            <button type="button" class="btn btn-primary" id="pwaIOSInstallBtn" style="display:none;">
-                                <i class="fa-brands fa-apple"></i>
-                                <span data-i18n="app.install.ios.btn">Instalēt uz iOS</span>
-                            </button>
-                            <!-- Shown when app is already installed -->
-                            <span id="pwaInstalledMsg" class="settings-field-value" style="display:none;">
-                                <i class="fa-solid fa-circle-check" style="color:var(--primary);"></i>
-                                <span data-i18n="app.install.already">Instalēts</span>
-                            </span>
-                        </div>
-                    </div>
-                    <div class="settings-divider"></div>
                     <!-- QR code row: desktop users scan with phone to open the install page -->
                     <div class="settings-row">
                         <div class="settings-row-info">

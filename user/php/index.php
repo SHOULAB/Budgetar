@@ -17,6 +17,12 @@ $_traw = json_decode(file_get_contents(__DIR__ . '/translate.json'), true) ?? []
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="../../assets/image/logo.png">
+    <script>
+        // Redirect to login when running as an installed PWA
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+            window.location.replace('login.php');
+        }
+    </script>
 </head>
 <body>
     <div class="container">

@@ -1652,6 +1652,11 @@ body.light-mode .adm-toast--error {
         background: none;
         border: none;
         cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
+        font-family: inherit;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
     }
 
     .mobile-more-overlay {
